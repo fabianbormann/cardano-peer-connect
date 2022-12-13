@@ -1,0 +1,24 @@
+{
+  "name": "cardano-peer-connect",
+  "version": "1.0.0",
+  "description": "This library aims to provide an abstract class to simplify to wallet implementation for CIP-????",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "keywords": [
+    "WebRTC",
+    "WebTorrent",
+    "wallet"
+  ],
+  "author": "",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@fabianbormann/meerkat": "^1.0.9"
+  },
+  "devDependencies": {
+    "jest": "^29.3.1",
+    "ts-jest": "^29.0.3",
+    "typescript": "^4.9.4"
+  }
+}
