@@ -31,6 +31,18 @@ export default abstract class CardanoPeerConnect {
 
   connect(identifier: string, announce?: Array<string>): void {
     const meerkat = new Meerkat({ identifier: identifier, announce: announce });
+    meerkat.register(
+      'invoke',
+      (address: string, args: Array<any>, callback: Function) => {
+        const cip30Function = args[0] as Cip30Function;
+        if (address === identifier) {
+          const result = (<any>this[cip30Function])(...args.slice(1));
+          if (typeof result !== 'undefined') {
+            callback(result);
+          }
+        }
+      }
+    );
 
     // https://cips.cardano.org/cips/cip30/
     const cip30Functions: Array<Cip30Function> = [
@@ -47,35 +59,21 @@ export default abstract class CardanoPeerConnect {
       'submitTx',
     ];
 
-    for (const cip30Function of cip30Functions) {
-      meerkat.register(
-        cip30Function,
-        (address: string, args: Array<any>, callback: Function) => {
-          if (address === identifier) {
-            const result = (<any>this[cip30Function])(...args);
-            if (typeof result !== 'undefined') {
-              callback(result);
-            }
-          }
-        }
-      );
-
-      meerkat.on('server', () => {
-        meerkat.rpc(
-          identifier,
-          'api',
-          {
-            api: {
-              apiVersion: this.apiVersion,
-              name: this.name,
-              icon: this.icon,
-              methods: cip30Functions,
-            },
+    meerkat.on('server', () => {
+      meerkat.rpc(
+        identifier,
+        'api',
+        {
+          api: {
+            apiVersion: this.apiVersion,
+            name: this.name,
+            icon: this.icon,
+            methods: cip30Functions,
           },
-          () => {}
-        );
-      });
-    }
+        },
+        () => {}
+      );
+    });
 
     this.meerkats.push(meerkat);
   }
