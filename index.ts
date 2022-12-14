@@ -15,6 +15,20 @@ export default abstract class CardanoPeerConnect {
 
   constructor() {}
 
+  getMeercat(identifier: string): Meerkat | undefined {
+    return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
+  }
+
+  disconnect(identifier: string) {
+    const meerkat = this.getMeercat(identifier);
+    if (meerkat) {
+      meerkat.close();
+      this.meerkats = this.meerkats.filter(
+        (meerkat) => meerkat.identifier !== identifier
+      );
+    }
+  }
+
   connect(identifier: string, announce?: Array<string>): void {
     const meerkat = new Meerkat({ identifier: identifier, announce: announce });
 
