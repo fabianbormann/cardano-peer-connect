@@ -26,3 +26,18 @@ export type Cip30DataSignature = {
   key: CoseKeyCborHex;
   signature: CoseSign1CborHex;
 };
+
+export type PeerConnectApi = {
+  apiVersion: string;
+  name: string;
+  icon: string;
+  methods: Array<Cip30Function>;
+};
+
+export type BrowserConnectApi = {
+  [key in Cip30Function]?: Function;
+} & {
+  apiVersion: string;
+  identifier: string;
+  icon: string;
+};
