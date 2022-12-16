@@ -29,8 +29,12 @@ export default abstract class CardanoPeerConnect {
     }
   }
 
-  connect(identifier: string, announce?: Array<string>): void {
-    const meerkat = new Meerkat({ identifier: identifier, announce: announce });
+  connect(identifier: string, announce?: Array<string>, seed?: string): void {
+    const meerkat = new Meerkat({
+      identifier: identifier,
+      announce: announce,
+      seed: seed,
+    });
     meerkat.register(
       'invoke',
       (address: string, args: Array<any>, callback: Function) => {
@@ -43,6 +47,24 @@ export default abstract class CardanoPeerConnect {
         }
       }
     );
+
+    const injectApi = () => {
+      meerkat.rpc(
+        identifier,
+        'api',
+        {
+          api: {
+            apiVersion: this.apiVersion,
+            name: this.name,
+            icon: this.icon,
+            methods: cip30Functions,
+          },
+        },
+        () => {}
+      );
+    };
+
+    meerkat.register;
 
     // https://cips.cardano.org/cips/cip30/
     const cip30Functions: Array<Cip30Function> = [
@@ -59,21 +81,7 @@ export default abstract class CardanoPeerConnect {
       'submitTx',
     ];
 
-    meerkat.on('server', () => {
-      meerkat.rpc(
-        identifier,
-        'api',
-        {
-          api: {
-            apiVersion: this.apiVersion,
-            name: this.name,
-            icon: this.icon,
-            methods: cip30Functions,
-          },
-        },
-        () => {}
-      );
-    });
+    meerkat.on('server', injectApi);
 
     this.meerkats.push(meerkat);
   }
