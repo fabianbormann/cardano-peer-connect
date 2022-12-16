@@ -29,7 +29,7 @@ export default abstract class CardanoPeerConnect {
     }
   }
 
-  connect(identifier: string, announce?: Array<string>, seed?: string): void {
+  connect(identifier: string, announce?: Array<string>, seed?: string): string {
     const meerkat = new Meerkat({
       identifier: identifier,
       announce: announce,
@@ -64,8 +64,6 @@ export default abstract class CardanoPeerConnect {
       );
     };
 
-    meerkat.register;
-
     // https://cips.cardano.org/cips/cip30/
     const cip30Functions: Array<Cip30Function> = [
       'getNetworkId',
@@ -84,6 +82,7 @@ export default abstract class CardanoPeerConnect {
     meerkat.on('server', injectApi);
 
     this.meerkats.push(meerkat);
+    return meerkat.seed;
   }
 
   abstract getNetworkId(): number;
