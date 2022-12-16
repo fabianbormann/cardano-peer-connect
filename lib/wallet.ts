@@ -29,11 +29,15 @@ export default abstract class CardanoPeerConnect {
     }
   }
 
-  connect(identifier: string, announce?: Array<string>, seed?: string): string {
+  connect(
+    identifier: string,
+    announce?: Array<string>,
+    seed?: string | null
+  ): string {
     const meerkat = new Meerkat({
       identifier: identifier,
       announce: announce,
-      seed: seed,
+      seed: seed ? seed : undefined,
     });
     meerkat.register(
       'invoke',
