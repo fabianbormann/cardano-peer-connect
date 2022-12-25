@@ -7,7 +7,7 @@ import type {
   Bytes,
   Cip30DataSignature,
 } from './types';
-import QRCode from 'qrcode';
+import QRCode from 'qrcode-svg';
 import Logger from '@fabianbormann/meerkat/dist/logger';
 
 export class DAppPeerConnect {
@@ -21,10 +21,12 @@ export class DAppPeerConnect {
     loggingEnabled?: boolean
   ) {
     this.meerkat = new Meerkat({
-      seed: seed,
+      seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
       announce: announce,
       loggingEnabled: loggingEnabled,
     });
+
+    localStorage.setItem('meerkat-dapp-seed', this.meerkat.seed);
 
     this.logger = this.meerkat.logger;
     this.logger.info(
@@ -141,14 +143,18 @@ export class DAppPeerConnect {
       .map((client) => globalCardano[client].identifier);
   }
 
-  generateQRCode(canvas: HTMLCanvasElement) {
-    QRCode.toCanvas(
-      canvas,
-      `${this.meerkat.address()}|meerkat|${new Date().getTime()}`,
-      (error) => {
-        if (error) this.logger.error(error);
-      }
-    );
+  generateQRCode(canvas: HTMLElement) {
+    const data = `${this.meerkat.address()}:meerkat:${new Date().getTime()}`;
+    var qrcode = new QRCode({
+      content: data,
+      padding: 4,
+      width: 256,
+      height: 256,
+      color: '#000000',
+      background: '#ffffff',
+      ecl: 'M',
+    });
+    canvas.innerHTML = qrcode.svg();
   }
 
   getAddress() {
