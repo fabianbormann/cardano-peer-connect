@@ -116,8 +116,12 @@ export class DAppPeerConnect {
         };
 
         for (const method of args.api.methods) {
-          api[method] = (params: Array<any>) =>
-            new Promise((resolve, reject) => {
+          api[method] = (params: Array<any>) => {
+            return new Promise((resolve, reject) => {
+              if (typeof params === 'undefined') {
+                params = [];
+              }
+
               this.meerkat.rpc(
                 address,
                 'invoke',
@@ -125,6 +129,7 @@ export class DAppPeerConnect {
                 (result: any) => resolve(result)
               );
             });
+          };
         }
 
         (window as any).cardano = (window as any).cardano || {};
