@@ -1,6 +1,13 @@
 # Cardano Peer Connect
 
+<p align="left">
+<img alt="semantic-release: angular" src="https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release" />
+</p>
+
 This library aims to provide simple interfaces to implement [CIP-????](https://github.com/cardano-foundation/CIPs/pull/395) for dApps and wallets.
+If you want to see ```cardano-peer-connect``` in action, please visit the [cip-xxxx-demo-implementation](https://github.com/fabianbormann/cip-xxxx-demo-implementation) repository.
+
+<img src="https://user-images.githubusercontent.com/1525818/209772566-54ac650b-efb2-4f84-8f7b-eaeedb6f5f90.gif" width="600" />
 
 ## Getting Started
 
