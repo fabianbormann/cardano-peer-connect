@@ -18,7 +18,11 @@ export class DAppPeerConnect {
   constructor(
     seed?: string,
     announce?: Array<string>,
-    loggingEnabled?: boolean
+    loggingEnabled?: boolean,
+    verifyConnection?: (address: string, callback: () => void) => void,
+    onConnect?: Function,
+    onDisconnect?: Function,
+    onApiInjection?: Function
   ) {
     this.meerkat = new Meerkat({
       seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
@@ -59,6 +63,11 @@ export class DAppPeerConnect {
     this.meerkat.on('left', (address: string) => {
       if (address === this.connectedWallet) {
         this.connectedWallet = null;
+
+        if (onDisconnect) {
+          onDisconnect();
+        }
+
         const globalCardano = (window as any).cardano || {};
         const apiName = Object.keys(globalCardano).find(
           (apiName) => globalCardano[apiName].identifier === address
@@ -80,9 +89,21 @@ export class DAppPeerConnect {
       'connect',
       (address: string, args: any, callback: Function) => {
         if (!this.connectedWallet) {
-          this.connectedWallet = address;
-          this.logger.info(`Successfully connected ${this.connectedWallet}`);
-          callback(true);
+          const connectWallet = () => {
+            this.connectedWallet = address;
+            this.logger.info(`Successfully connected ${this.connectedWallet}`);
+            callback(true);
+
+            if (onConnect) {
+              onConnect();
+            }
+          };
+
+          if (typeof verifyConnection !== 'undefined') {
+            verifyConnection(address, connectWallet);
+          } else {
+            connectWallet();
+          }
         } else if (this.connectedWallet === address) {
           this.logger.info(
             `Connection has already been established to ${address}.`
@@ -137,6 +158,10 @@ export class DAppPeerConnect {
         this.logger.info(
           `injected api of ${args.api.name} into window.cardano`
         );
+
+        if (onApiInjection) {
+          onApiInjection();
+        }
       }
     );
   }
