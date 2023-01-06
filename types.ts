@@ -41,3 +41,17 @@ export type BrowserConnectApi = {
   identifier: string;
   icon: string;
 };
+
+export interface DAppPeerConnectParameters {
+  seed?: string;
+  announce?: Array<string>;
+  loggingEnabled?: boolean;
+  verifyConnection?: (
+    address: string,
+    callback: (granted: boolean) => void
+  ) => void;
+  onConnect?: (address: string) => void;
+  onDisconnect?: (address: string) => void;
+  onApiEject?: (name: string, address: string) => void;
+  onApiInject?: (name: string, address: string) => void;
+}

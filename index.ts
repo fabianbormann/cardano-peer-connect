@@ -1,5 +1,9 @@
 import Meerkat from '@fabianbormann/meerkat';
-import type { PeerConnectApi, BrowserConnectApi } from './types';
+import type {
+  PeerConnectApi,
+  BrowserConnectApi,
+  DAppPeerConnectParameters,
+} from './types';
 import type {
   Cip30Function,
   Cbor,
@@ -15,15 +19,16 @@ export class DAppPeerConnect {
   private connectedWallet: string | null = null;
   logger: Logger;
 
-  constructor(
-    seed?: string,
-    announce?: Array<string>,
-    loggingEnabled?: boolean,
-    verifyConnection?: (address: string, callback: () => void) => void,
-    onConnect?: Function,
-    onDisconnect?: Function,
-    onApiInjection?: Function
-  ) {
+  constructor({
+    seed,
+    announce,
+    loggingEnabled,
+    verifyConnection,
+    onConnect,
+    onDisconnect,
+    onApiEject,
+    onApiInject,
+  }: DAppPeerConnectParameters) {
     this.meerkat = new Meerkat({
       seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
       announce: announce,
@@ -65,7 +70,7 @@ export class DAppPeerConnect {
         this.connectedWallet = null;
 
         if (onDisconnect) {
-          onDisconnect();
+          onDisconnect(address);
         }
 
         const globalCardano = (window as any).cardano || {};
@@ -77,6 +82,9 @@ export class DAppPeerConnect {
             `${this.connectedWallet} disconnected. ${apiName} has been removed from the global window object`
           );
           delete (window as any).cardano[apiName];
+          if (onApiEject) {
+            onApiEject(apiName, address);
+          }
         } else {
           this.logger.info(
             `${this.connectedWallet} disconnected. Cleanup was not necessary.`
@@ -89,20 +97,26 @@ export class DAppPeerConnect {
       'connect',
       (address: string, args: any, callback: Function) => {
         if (!this.connectedWallet) {
-          const connectWallet = () => {
-            this.connectedWallet = address;
-            this.logger.info(`Successfully connected ${this.connectedWallet}`);
-            callback(true);
+          const connectWallet = (granted: boolean) => {
+            if (granted) {
+              this.connectedWallet = address;
+              this.logger.info(
+                `Successfully connected ${this.connectedWallet}`
+              );
+              callback(true);
 
-            if (onConnect) {
-              onConnect();
+              if (onConnect) {
+                onConnect(address);
+              }
+            } else {
+              this.logger.info(`User denied connection to ${address}`);
             }
           };
 
           if (typeof verifyConnection !== 'undefined') {
             verifyConnection(address, connectWallet);
           } else {
-            connectWallet();
+            connectWallet(true);
           }
         } else if (this.connectedWallet === address) {
           this.logger.info(
@@ -159,8 +173,8 @@ export class DAppPeerConnect {
           `injected api of ${args.api.name} into window.cardano`
         );
 
-        if (onApiInjection) {
-          onApiInjection();
+        if (onApiInject) {
+          onApiInject(args.api.name, address);
         }
       }
     );
