@@ -1,8 +1,8 @@
 import Meerkat from '@fabianbormann/meerkat';
 import type {
   PeerConnectApi,
-  BrowserConnectApi,
   DAppPeerConnectParameters,
+  Cip30Api,
 } from './types';
 import type {
   Cip30Function,
@@ -144,11 +144,9 @@ export class DAppPeerConnect {
           return;
         }
 
-        const api: BrowserConnectApi = {
-          apiVersion: args.api.apiVersion,
-          icon: args.api.icon,
-          identifier: address,
-        };
+        const api: {
+          [key in Cip30Function]?: Function;
+        } = {};
 
         for (const method of args.api.methods) {
           api[method] = (params: Array<any>) => {
@@ -167,8 +165,17 @@ export class DAppPeerConnect {
           };
         }
 
+        const cip30Api: Cip30Api = {
+          apiVersion: args.api.apiVersion,
+          name: args.api.name,
+          icon: args.api.icon,
+          identifier: address,
+          isEnabled: () => new Promise((resolve, reject) => resolve(true)),
+          enable: () => new Promise((resovle, reject) => resovle(api)),
+        };
+
         (window as any).cardano = (window as any).cardano || {};
-        (window as any).cardano[args.api.name] = api;
+        (window as any).cardano[args.api.name] = cip30Api;
         this.logger.info(
           `injected api of ${args.api.name} into window.cardano`
         );

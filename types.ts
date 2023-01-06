@@ -34,12 +34,15 @@ export type PeerConnectApi = {
   methods: Array<Cip30Function>;
 };
 
-export type BrowserConnectApi = {
-  [key in Cip30Function]?: Function;
-} & {
+export type Cip30Api = {
+  enable: () => Promise<{
+    [key in Cip30Function]?: Function;
+  }>;
+  isEnabled: () => Promise<boolean>;
   apiVersion: string;
-  identifier: string;
   icon: string;
+  name: string;
+  identifier: string;
 };
 
 export interface DAppPeerConnectParameters {
