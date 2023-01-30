@@ -251,10 +251,10 @@ export abstract class CardanoPeerConnect {
     });
     meerkat.register(
       'invoke',
-      (address: string, args: Array<any>, callback: Function) => {
+      async (address: string, args: Array<any>, callback: Function) => {
         const cip30Function = args[0] as Cip30Function;
         if (address === identifier) {
-          const result = (<any>this[cip30Function])(...args.slice(1));
+          const result = await (<any>this[cip30Function])(...args.slice(1));
           if (typeof result !== 'undefined') {
             callback(result);
           }
@@ -309,15 +309,15 @@ export abstract class CardanoPeerConnect {
     return meerkat.seed;
   }
 
-  abstract getNetworkId(): number;
-  abstract getUtxos(amount?: Cbor, paginate?: Paginate): Cbor[] | null;
-  abstract getCollateral(params?: { amount?: Cbor }): Cbor[] | null;
-  abstract getBalance(): Cbor;
-  abstract getUsedAddresses(): Cbor[];
-  abstract getUnusedAddresses(): Cbor[];
-  abstract getChangeAddress(): Cbor;
-  abstract getRewardAddresses(): Cbor[];
-  abstract signTx(tx: Cbor, partialSign: boolean): Cbor;
-  abstract signData(addr: string, payload: Bytes): Cip30DataSignature;
-  abstract submitTx(tx: Cbor): string;
+  abstract getNetworkId(): Promise<number>;
+  abstract getUtxos(amount?: Cbor, paginate?: Paginate): Promise<Cbor[] | null>;
+  abstract getCollateral(params?: { amount?: Cbor }): Promise<Cbor[] | null>;
+  abstract getBalance(): Promise<Cbor>;
+  abstract getUsedAddresses(): Promise<Cbor[]>;
+  abstract getUnusedAddresses(): Promise<Cbor[]>;
+  abstract getChangeAddress(): Promise<Cbor>;
+  abstract getRewardAddresses(): Promise<Cbor[]>;
+  abstract signTx(tx: Cbor, partialSign: boolean): Promise<Cbor>;
+  abstract signData(addr: string, payload: Bytes): Promise<Cip30DataSignature>;
+  abstract submitTx(tx: Cbor): Promise<string>;
 }
