@@ -149,7 +149,7 @@ export class DAppPeerConnect {
         } = {};
 
         for (const method of args.api.methods) {
-          api[method] = (params: Array<any>) => {
+          api[method] = (...params: Array<any>) => {
             return new Promise((resolve, reject) => {
               if (typeof params === 'undefined') {
                 params = [];
@@ -254,6 +254,9 @@ export abstract class CardanoPeerConnect {
       async (address: string, args: Array<any>, callback: Function) => {
         const cip30Function = args[0] as Cip30Function;
         if (address === identifier) {
+          meerkat.logger.info('hello world');
+          meerkat.logger.info(args);
+          meerkat.logger.info(args.slice(1));
           const result = await (<any>this[cip30Function])(...args.slice(1));
           if (typeof result !== 'undefined') {
             callback(result);
