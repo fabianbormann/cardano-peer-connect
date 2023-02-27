@@ -254,10 +254,7 @@ export abstract class CardanoPeerConnect {
       async (address: string, args: Array<any>, callback: Function) => {
         const cip30Function = args[0] as Cip30Function;
         if (address === identifier) {
-          meerkat.logger.info('hello world');
-          meerkat.logger.info(args);
-          meerkat.logger.info(args.slice(1));
-          const result = await (<any>this[cip30Function])(...args.slice(1));
+          const result = await (<any>this[cip30Function])(...args.splice(1));
           if (typeof result !== 'undefined') {
             callback(result);
           }
