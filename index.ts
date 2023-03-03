@@ -3,23 +3,28 @@ import type {
   PeerConnectApi,
   DAppPeerConnectParameters,
   Cip30Api,
-} from './types';
-import type {
   Cip30Function,
   Cbor,
   Paginate,
   Bytes,
   Cip30DataSignature,
+  IConnectMessage,
+  IDAppInfos,
+  IWalletInfo
 } from './types';
 import QRCode from 'qrcode-svg';
 import Logger from '@fabianbormann/meerkat/dist/logger';
 
 export class DAppPeerConnect {
+
   private meerkat: Meerkat;
   private connectedWallet: string | null = null;
   logger: Logger;
 
+  private readonly dAppInfo: IDAppInfos
+
   constructor({
+    dAppInfo,
     seed,
     announce,
     loggingEnabled,
@@ -29,6 +34,9 @@ export class DAppPeerConnect {
     onApiEject,
     onApiInject,
   }: DAppPeerConnectParameters) {
+
+    this.dAppInfo = dAppInfo
+
     this.meerkat = new Meerkat({
       seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
       announce: announce,
@@ -42,7 +50,10 @@ export class DAppPeerConnect {
       `The generated meerkat address is: ${this.meerkat.address()}`
     );
 
+    this.dAppInfo.address = this.meerkat.address()
+
     var connected = false;
+
     this.meerkat.on('connections', () => {
       if (!connected) {
         connected = true;
@@ -91,11 +102,12 @@ export class DAppPeerConnect {
           );
         }
       }
-    });
+    })
 
     this.meerkat.register(
       'connect',
-      (address: string, args: any, callback: Function) => {
+      (address: string, walletInfo: IWalletInfo, callback: (args: IConnectMessage) => void) => {
+
         if (!this.connectedWallet) {
           const connectWallet = (granted: boolean) => {
             if (granted) {
@@ -103,30 +115,61 @@ export class DAppPeerConnect {
               this.logger.info(
                 `Successfully connected ${this.connectedWallet}`
               );
-              callback(true);
+              callback({
+                dApp: this.dAppInfo,
+                connected: true,
+                error: false
+              });
 
               if (onConnect) {
                 onConnect(address);
               }
             } else {
+
+              callback({
+                dApp: this.dAppInfo,
+                connected: false,
+                error: true,
+                errorMessage: `User denied connection to ${address}`
+              })
+
               this.logger.info(`User denied connection to ${address}`);
             }
           };
 
           if (typeof verifyConnection !== 'undefined') {
-            verifyConnection(address, connectWallet);
+            verifyConnection({
+              ...walletInfo,
+              address: address
+            }, connectWallet);
           } else {
             connectWallet(true);
           }
         } else if (this.connectedWallet === address) {
+
           this.logger.info(
             `Connection has already been established to ${address}.`
-          );
+          )
+
+          callback({
+            dApp: this.dAppInfo,
+            connected: true,
+            error: false
+          });
+
         } else {
+
+          callback({
+            dApp: this.dAppInfo,
+            connected: false,
+            error: false,
+            errorMessage: 'Connection failed. Another wallet has already been connected to this dApp.'
+          });
+
           this.logger.info(
             'Connection failed. Another wallet has already been connected to this dApp.'
           );
-          callback(false);
+
         }
       }
     );
@@ -134,13 +177,19 @@ export class DAppPeerConnect {
     this.meerkat.register(
       'api',
       (address: string, args: { api: PeerConnectApi }, callback: Function) => {
+
         if (address !== this.connectedWallet) {
+
+          console.log('SERVER: api called from non registered address.')
+
           return;
         }
 
         const injectedClients = this.getInjectedApis();
         if (injectedClients.includes(address)) {
+
           this.logger.info(`${address} already injected`);
+
           return;
         }
 
@@ -149,8 +198,11 @@ export class DAppPeerConnect {
         } = {};
 
         for (const method of args.api.methods) {
+
           api[method] = (...params: Array<any>) => {
+
             return new Promise((resolve, reject) => {
+
               if (typeof params === 'undefined') {
                 params = [];
               }
@@ -218,18 +270,31 @@ export class DAppPeerConnect {
 }
 
 export abstract class CardanoPeerConnect {
-  abstract apiVersion: string;
-  abstract name: string;
-  abstract icon: string;
-  meerkats: Array<Meerkat> = [];
 
-  constructor() {}
+  protected meerkats: Array<Meerkat> = [];
+  protected walletInfo: IWalletInfo
+  protected onConnect:                  (connectMessage: IConnectMessage) => void
 
-  getMeercat(identifier: string): Meerkat | undefined {
+  constructor(
+    walletInfo: IWalletInfo,
+  ) {
+
+    this.walletInfo           = walletInfo
+
+    this.onConnect            = (connectMessage: IConnectMessage) => {}
+
+  }
+
+  public setOnConnect                = (onConnectCallback: (connectMessage: IConnectMessage) => void) => {
+
+    this.onConnect            = onConnectCallback
+  }
+
+  public getMeercat(identifier: string): Meerkat | undefined {
     return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
   }
 
-  disconnect(identifier: string) {
+  public disconnect(identifier: string) {
     const meerkat = this.getMeercat(identifier);
     if (meerkat) {
       meerkat.close();
@@ -239,7 +304,7 @@ export abstract class CardanoPeerConnect {
     }
   }
 
-  connect(
+  public connect(
     identifier: string,
     announce?: Array<string>,
     seed?: string | null
@@ -268,9 +333,9 @@ export abstract class CardanoPeerConnect {
         'api',
         {
           api: {
-            apiVersion: this.apiVersion,
-            name: this.name,
-            icon: this.icon,
+            apiVersion: this.walletInfo.version,
+            name: this.walletInfo.name,
+            icon: this.walletInfo.name,
             methods: cip30Functions,
           },
         },
@@ -294,14 +359,21 @@ export abstract class CardanoPeerConnect {
     ];
 
     meerkat.on('server', () => {
-      meerkat.rpc(identifier, 'connect', {}, (isConnected: boolean) => {
-        if (isConnected) {
+
+      meerkat.rpc(identifier, 'connect', this.walletInfo, (connectStatus: IConnectMessage) => {
+
+        if (connectStatus.connected) {
+
           injectApi();
+
         } else {
+
           meerkat.logger.warn(
             'Connection failed. Another wallet has already been connected to this dApp.'
-          );
+          )
         }
+
+        this.onConnect(connectStatus)
       });
     });
 
@@ -309,15 +381,15 @@ export abstract class CardanoPeerConnect {
     return meerkat.seed;
   }
 
-  abstract getNetworkId(): Promise<number>;
-  abstract getUtxos(amount?: Cbor, paginate?: Paginate): Promise<Cbor[] | null>;
-  abstract getCollateral(params?: { amount?: Cbor }): Promise<Cbor[] | null>;
-  abstract getBalance(): Promise<Cbor>;
-  abstract getUsedAddresses(): Promise<Cbor[]>;
-  abstract getUnusedAddresses(): Promise<Cbor[]>;
-  abstract getChangeAddress(): Promise<Cbor>;
-  abstract getRewardAddresses(): Promise<Cbor[]>;
-  abstract signTx(tx: Cbor, partialSign: boolean): Promise<Cbor>;
-  abstract signData(addr: string, payload: Bytes): Promise<Cip30DataSignature>;
-  abstract submitTx(tx: Cbor): Promise<string>;
+  protected abstract getNetworkId(): Promise<number>;
+  protected abstract getUtxos(amount?: Cbor, paginate?: Paginate): Promise<Cbor[] | null>;
+  protected abstract getCollateral(params?: { amount?: Cbor }): Promise<Cbor[] | null>;
+  protected abstract getBalance(): Promise<Cbor>;
+  protected abstract getUsedAddresses(): Promise<Cbor[]>;
+  protected abstract getUnusedAddresses(): Promise<Cbor[]>;
+  protected abstract getChangeAddress(): Promise<Cbor>;
+  protected abstract getRewardAddresses(): Promise<Cbor[]>;
+  protected abstract signTx(tx: Cbor, partialSign: boolean): Promise<Cbor>;
+  protected abstract signData(addr: string, payload: Bytes): Promise<Cip30DataSignature>;
+  protected abstract submitTx(tx: Cbor): Promise<string>;
 }
