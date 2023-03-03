@@ -62,7 +62,7 @@ export class DAppPeerConnect {
     });
 
     this.meerkat.on('seen', (address) => {
-      const globalCardano = (window as any).cardano || {};
+      const globalCardano = (window as any).cardanop2p || {};
       if (
         Object.keys(globalCardano).find(
           (apiName) => globalCardano[apiName].identifier === address
@@ -84,7 +84,7 @@ export class DAppPeerConnect {
           onDisconnect(address);
         }
 
-        const globalCardano = (window as any).cardano || {};
+        const globalCardano = (window as any).cardanop2p || {};
         const apiName = Object.keys(globalCardano).find(
           (apiName) => globalCardano[apiName].identifier === address
         );
@@ -92,7 +92,7 @@ export class DAppPeerConnect {
           this.logger.info(
             `${this.connectedWallet} disconnected. ${apiName} has been removed from the global window object`
           );
-          delete (window as any).cardano[apiName];
+          delete (window as any).cardanop2p[apiName];
           if (onApiEject) {
             onApiEject(apiName, address);
           }
@@ -226,10 +226,10 @@ export class DAppPeerConnect {
           enable: () => new Promise((resovle, reject) => resovle(api)),
         };
 
-        (window as any).cardano = (window as any).cardano || {};
-        (window as any).cardano[args.api.name] = cip30Api;
+        (window as any).cardanop2p = (window as any).cardanop2p || {};
+        (window as any).cardanop2p[args.api.name] = cip30Api;
         this.logger.info(
-          `injected api of ${args.api.name} into window.cardano`
+          `injected api of ${args.api.name} into window.cardanop2p`
         );
 
         if (onApiInject) {
@@ -240,7 +240,7 @@ export class DAppPeerConnect {
   }
 
   private getInjectedApis() {
-    const globalCardano = (window as any).cardano || {};
+    const globalCardano = (window as any).cardanop2p || {};
     return Object.keys(globalCardano)
       .filter((client) => typeof globalCardano[client].identifier === 'string')
       .map((client) => globalCardano[client].identifier);
