@@ -45,12 +45,40 @@ export type Cip30Api = {
   identifier: string;
 };
 
+export interface IDAppInfos {
+
+  name: string,
+  url: string,
+  address?: string
+}
+
+export interface IConnectMessage {
+
+  dApp: IDAppInfos
+  address?: string,
+  connected: boolean,
+  error: boolean,
+  errorMessage?: string,
+
+}
+
+export interface IWalletInfo {
+
+  address?: string,
+  name: string,
+  version: string,
+  icon: string
+
+}
+
+
 export interface DAppPeerConnectParameters {
+  dAppInfo: IDAppInfos,
   seed?: string;
   announce?: Array<string>;
   loggingEnabled?: boolean;
   verifyConnection?: (
-    address: string,
+    walletInfo: IWalletInfo,
     callback: (granted: boolean) => void
   ) => void;
   onConnect?: (address: string) => void;
