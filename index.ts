@@ -3,23 +3,32 @@ import type {
   PeerConnectApi,
   DAppPeerConnectParameters,
   Cip30Api,
-} from './types';
-import type {
   Cip30Function,
   Cbor,
   Paginate,
   Bytes,
   Cip30DataSignature,
+  IConnectMessage,
+  IDAppInfos,
+  IWalletInfo
 } from './types';
 import QRCode from 'qrcode-svg';
 import Logger from '@fabianbormann/meerkat/dist/logger';
 
 export class DAppPeerConnect {
+
   private meerkat: Meerkat;
   private connectedWallet: string | null = null;
   logger: Logger;
 
+  private readonly dAppInfo: IDAppInfos
+
+  protected onConnect?: (address: string) => void;
+  protected onDisconnect?: (address: string) => void;
+  protected onApiEject?: (name: string, address: string) => void;
+  protected onApiInject?: (name: string, address: string) => void;
   constructor({
+    dAppInfo,
     seed,
     announce,
     loggingEnabled,
@@ -29,11 +38,30 @@ export class DAppPeerConnect {
     onApiEject,
     onApiInject,
   }: DAppPeerConnectParameters) {
+
+    this.dAppInfo = dAppInfo
+
     this.meerkat = new Meerkat({
       seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
       announce: announce,
       loggingEnabled: loggingEnabled,
     });
+
+    if(onConnect) {
+      this.onConnect = onConnect
+    }
+
+    if(onDisconnect) {
+      this.onDisconnect = onDisconnect
+    }
+
+    if(onApiEject) {
+      this.onApiEject = onApiEject
+    }
+
+    if(onApiInject) {
+      this.onApiInject = onApiInject
+    }
 
     localStorage.setItem('meerkat-dapp-seed', this.meerkat.seed);
 
@@ -42,7 +70,10 @@ export class DAppPeerConnect {
       `The generated meerkat address is: ${this.meerkat.address()}`
     );
 
+    this.dAppInfo.address = this.meerkat.address()
+
     var connected = false;
+
     this.meerkat.on('connections', () => {
       if (!connected) {
         connected = true;
@@ -66,81 +97,149 @@ export class DAppPeerConnect {
     });
 
     this.meerkat.on('left', (address: string) => {
-      if (address === this.connectedWallet) {
-        this.connectedWallet = null;
 
-        if (onDisconnect) {
-          onDisconnect(address);
-        }
-
-        const globalCardano = (window as any).cardano || {};
-        const apiName = Object.keys(globalCardano).find(
-          (apiName) => globalCardano[apiName].identifier === address
-        );
-        if (apiName) {
-          this.logger.info(
-            `${this.connectedWallet} disconnected. ${apiName} has been removed from the global window object`
-          );
-          delete (window as any).cardano[apiName];
-          if (onApiEject) {
-            onApiEject(apiName, address);
-          }
-        } else {
-          this.logger.info(
-            `${this.connectedWallet} disconnected. Cleanup was not necessary.`
-          );
-        }
-      }
-    });
+      this.leftServer(address)
+    })
 
     this.meerkat.register(
       'connect',
-      (address: string, args: any, callback: Function) => {
+      (address: string, walletInfo: IWalletInfo, callback: (args: IConnectMessage) => void) => {
+
         if (!this.connectedWallet) {
           const connectWallet = (granted: boolean) => {
-            if (granted) {
-              this.connectedWallet = address;
-              this.logger.info(
-                `Successfully connected ${this.connectedWallet}`
-              );
-              callback(true);
 
-              if (onConnect) {
-                onConnect(address);
+            if (granted) {
+
+              this.connectedWallet = address;
+              this.logger.info(`Successfully connected ${this.connectedWallet}`);
+
+              callback({
+                dApp: this.dAppInfo,
+                address: address,
+                connected: true,
+                error: false
+              });
+
+              if (this.onConnect) {
+
+                this.onConnect(address);
               }
             } else {
+
+              callback({
+                dApp: this.dAppInfo,
+                address: address,
+                connected: false,
+                error: true,
+                errorMessage: `User denied connection to ${address}`
+              })
+
               this.logger.info(`User denied connection to ${address}`);
             }
           };
 
           if (typeof verifyConnection !== 'undefined') {
-            verifyConnection(address, connectWallet);
+            verifyConnection({
+              ...walletInfo,
+              address: address
+            }, connectWallet);
           } else {
             connectWallet(true);
           }
         } else if (this.connectedWallet === address) {
+
           this.logger.info(
             `Connection has already been established to ${address}.`
-          );
+          )
+
+          callback({
+            address: address,
+            dApp: this.dAppInfo,
+            connected: true,
+            error: false
+          });
+
         } else {
+
+          callback({
+            dApp: this.dAppInfo,
+            address: address,
+            connected: false,
+            error: false,
+            errorMessage: 'Connection failed. Another wallet has already been connected to this dApp.'
+          });
+
           this.logger.info(
             'Connection failed. Another wallet has already been connected to this dApp.'
           );
-          callback(false);
+
         }
+      }
+    );
+
+    /**
+     * Client signals that it is disconnecting
+     */
+    this.meerkat.register('disconnect',
+
+      (address: string, walletInfo: IWalletInfo, callback: (args: IConnectMessage) => void) => {
+
+        if (this.connectedWallet) {
+
+          if(this.connectedWallet !== address) {
+
+            this.logger.info(`Unregistered address ${address} is calling disconnect.`)
+
+            callback({
+              dApp: this.dAppInfo,
+              connected: false,
+              error: true,
+              errorMessage: 'Unregistered address ${address} is calling disconnect.'
+            })
+
+            return
+          }
+
+          this.logger.info(`Wallet ${this.connectedWallet} is calling disconnect.`)
+
+          callback({
+            dApp: this.dAppInfo,
+            connected: false,
+            error: false
+          })
+
+          this.leftServer(address)
+
+          this.connectedWallet = null
+
+          return
+        }
+
+        this.logger.info(`Calling disconnect with no connected wallet.`)
+
+        callback({
+          dApp: this.dAppInfo,
+          connected: false,
+          error: true,
+          errorMessage: 'No wallet is connected.'
+        })
       }
     );
 
     this.meerkat.register(
       'api',
       (address: string, args: { api: PeerConnectApi }, callback: Function) => {
+
         if (address !== this.connectedWallet) {
+
           return;
         }
 
         const injectedClients = this.getInjectedApis();
         if (injectedClients.includes(address)) {
+
           this.logger.info(`${address} already injected`);
+
           return;
         }
 
@@ -149,8 +248,11 @@ export class DAppPeerConnect {
         } = {};
 
         for (const method of args.api.methods) {
+
           api[method] = (...params: Array<any>) => {
+
             return new Promise((resolve, reject) => {
+
               if (typeof params === 'undefined') {
                 params = [];
               }
@@ -187,6 +289,55 @@ export class DAppPeerConnect {
     );
   }
 
+  private     leftServer = (address: string) => {
+
+    if (address === this.connectedWallet) {
+      this.connectedWallet = null;
+
+      if (this.onDisconnect) {
+        this.onDisconnect(address);
+      }
+
+      const globalCardano = (window as any).cardanop2p || {};
+      const apiName = Object.keys(globalCardano).find(
+        (apiName) => globalCardano[apiName].identifier === address
+      );
+      if (apiName) {
+        this.logger.info(
+          `${this.connectedWallet} disconnected. ${apiName} has been removed from the global window object`
+        );
+        delete (window as any).cardanop2p[apiName];
+        if (this.onApiEject) {
+          this.onApiEject(apiName, address);
+        }
+      } else {
+        this.logger.info(
+          `${this.connectedWallet} disconnected. Cleanup was not necessary.`
+        );
+      }
+    }
+  }
+
+  public shutdownServer = () => {
+
+      if(this.connectedWallet) {
+
+        const status: IConnectMessage = {
+          connected: false,
+          error: false,
+          errorMessage: 'Server is closing connections.',
+          dApp: this.dAppInfo
+        }
+
+        this.meerkat.rpc(
+          this.connectedWallet,
+          'shutdown',
+          status,
+          () => {}
+        );
+    }
+  }
+
   private getInjectedApis() {
     const globalCardano = (window as any).cardano || {};
     return Object.keys(globalCardano)
@@ -208,6 +359,10 @@ export class DAppPeerConnect {
     canvas.innerHTML = qrcode.svg();
   }
 
+  getConnectedWallet() {
+    return this.connectedWallet
+  }
+
   getAddress() {
     return this.meerkat.address();
   }
@@ -218,41 +373,73 @@ export class DAppPeerConnect {
 }
 
 export abstract class CardanoPeerConnect {
-  abstract apiVersion: string;
-  abstract name: string;
-  abstract icon: string;
-  meerkats: Array<Meerkat> = [];
 
-  constructor() {}
+  protected meerkats: Array<Meerkat> = [];
+  protected walletInfo: IWalletInfo
+  protected onConnect:                  (connectMessage: IConnectMessage) => void
+  protected onDisconnect:               (connectMessage: IConnectMessage) => void
+  protected onServerShutdown:           (connectMessage: IConnectMessage) => void
 
-  getMeercat(identifier: string): Meerkat | undefined {
+  protected meerkat : Meerkat | null = null
+
+  constructor(walletInfo: IWalletInfo) {
+
+    this.walletInfo           = walletInfo
+
+    this.onConnect            = (connectMessage: IConnectMessage) => {}
+    this.onDisconnect         = (connectMessage: IConnectMessage) => {}
+    this.onServerShutdown     = () => {}
+  }
+
+  public setOnConnect         = (onConnectCallback: (connectMessage: IConnectMessage) => void) => {
+
+    this.onConnect            = onConnectCallback
+  }
+
+  public setOnDisconnect      = (onDisconnectCallback: (connectMessage: IConnectMessage) => void) => {
+
+    this.onDisconnect         = onDisconnectCallback
+  }
+
+  public setOnServerShutdown  = (onServerShutdown: (connectMessage: IConnectMessage) => void) => {
+
+    this.onServerShutdown     = onServerShutdown
+  }
+
+
+  public getMeercat(identifier: string): Meerkat | undefined {
     return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
   }
 
-  disconnect(identifier: string) {
-    const meerkat = this.getMeercat(identifier);
-    if (meerkat) {
-      meerkat.close();
-      this.meerkats = this.meerkats.filter(
-        (meerkat) => meerkat.identifier !== identifier
-      );
-    }
-  }
-
-  connect(
+  public connect(
     identifier: string,
     announce?: Array<string>,
     seed?: string | null
   ): string {
-    const meerkat = new Meerkat({
+    this.meerkat = new Meerkat({
       identifier: identifier,
       announce: announce,
       seed: seed ? seed : undefined,
     });
-    meerkat.register(
+
+    this.meerkat.register(
+      'shutdown',
+      async (address: string, args: IConnectMessage, callback: Function) => {
+
+        if(address !== args.dApp.address) {
+
+          throw new Error(`Address ${args.address} tries to send shutdown for server, ${args.address}.`)
+        }
+
+        this.onServerShutdown(args)
+
+      })
+
+    this.meerkat.register(
       'invoke',
       async (address: string, args: Array<any>, callback: Function) => {
         const cip30Function = args[0] as Cip30Function;
+
         if (address === identifier) {
           meerkat.logger.info('hello world');
           meerkat.logger.info(args);
@@ -266,14 +453,20 @@ export abstract class CardanoPeerConnect {
     );
 
     const injectApi = () => {
-      meerkat.rpc(
+
+      if(!this.meerkat) {
+
+        throw new Error('Merrkat not connected.')
+      }
+
+      this.meerkat.rpc(
         identifier,
         'api',
         {
           api: {
-            apiVersion: this.apiVersion,
-            name: this.name,
-            icon: this.icon,
+            apiVersion: this.walletInfo.version,
+            name: this.walletInfo.name,
+            icon: this.walletInfo.name,
             methods: cip30Functions,
           },
         },
@@ -296,31 +489,68 @@ export abstract class CardanoPeerConnect {
       'submitTx',
     ];
 
-    meerkat.on('server', () => {
-      meerkat.rpc(identifier, 'connect', {}, (isConnected: boolean) => {
-        if (isConnected) {
+    this.meerkat.on('server', () => {
+
+      if(!this.meerkat) {
+
+        throw new Error('Meerkat not connected.')
+      }
+
+      this.meerkat.rpc(identifier, 'connect', this.walletInfo, (connectStatus: IConnectMessage) => {
+
+        if (connectStatus.connected) {
+
           injectApi();
+
         } else {
-          meerkat.logger.warn(
+
+
+          if(!this.meerkat) {
+
+            throw new Error('Merrkat not connected.')
+          }
+
+          this.meerkat.logger.warn(
             'Connection failed. Another wallet has already been connected to this dApp.'
-          );
+          )
         }
+
+        this.onConnect(connectStatus)
       });
     });
 
-    this.meerkats.push(meerkat);
-    return meerkat.seed;
+    this.meerkats.push(this.meerkat);
+    return this.meerkat.seed;
   }
 
-  abstract getNetworkId(): Promise<number>;
-  abstract getUtxos(amount?: Cbor, paginate?: Paginate): Promise<Cbor[] | null>;
-  abstract getCollateral(params?: { amount?: Cbor }): Promise<Cbor[] | null>;
-  abstract getBalance(): Promise<Cbor>;
-  abstract getUsedAddresses(): Promise<Cbor[]>;
-  abstract getUnusedAddresses(): Promise<Cbor[]>;
-  abstract getChangeAddress(): Promise<Cbor>;
-  abstract getRewardAddresses(): Promise<Cbor[]>;
-  abstract signTx(tx: Cbor, partialSign: boolean): Promise<Cbor>;
-  abstract signData(addr: string, payload: Bytes): Promise<Cip30DataSignature>;
-  abstract submitTx(tx: Cbor): Promise<string>;
+
+  public disconnect(address: string) {
+
+    if(!this.meerkat) {
+
+      throw new Error('Meerkat not connected.')
+    }
+
+    this.meerkat.rpc(address, 'disconnect', this.walletInfo, (connectStatus: IConnectMessage) => {
+
+      if(this.meerkat) {
+
+        this.meerkat.close()
+      }
+
+      this.onDisconnect(connectStatus)
+    })
+  }
+
+  protected abstract getNetworkId(): Promise<number>;
+  protected abstract getUtxos(amount?: Cbor, paginate?: Paginate): Promise<Cbor[] | null>;
+  protected abstract getCollateral(params?: { amount?: Cbor }): Promise<Cbor[] | null>;
+  protected abstract getBalance(): Promise<Cbor>;
+  protected abstract getUsedAddresses(): Promise<Cbor[]>;
+  protected abstract getUnusedAddresses(): Promise<Cbor[]>;
+  protected abstract getChangeAddress(): Promise<Cbor>;
+  protected abstract getRewardAddresses(): Promise<Cbor[]>;
+  protected abstract signTx(tx: Cbor, partialSign: boolean): Promise<Cbor>;
+  protected abstract signData(addr: string, payload: Bytes): Promise<Cip30DataSignature>;
+  protected abstract submitTx(tx: Cbor): Promise<string>;
 }
