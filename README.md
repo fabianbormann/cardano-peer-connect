@@ -1,6 +1,6 @@
 # Cardano Peer Connect
 
-<p align="center">
+<p align="left">
 
 <img alt="Release" src="https://img.shields.io/github/actions/workflow/status/fabianbormann/cardano-peer-connect/release.yml?label=Release&style=for-the-badge" />
 <a href="https://conventionalcommits.org"><img alt="conventionalcommits" src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&style=for-the-badge" /></a>
