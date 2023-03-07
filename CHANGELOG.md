@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.0.1](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.0.0...v1.0.1) (2023-03-07)
+## [1.2.0](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.0.0...v1.2.0) (2023-03-07)
 
 
 ### Bug Fixes
