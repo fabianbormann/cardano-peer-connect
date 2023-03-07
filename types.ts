@@ -55,6 +55,7 @@ export interface IDAppInfos {
 export interface IConnectMessage {
 
   dApp: IDAppInfos
+  address?: string,
   connected: boolean,
   error: boolean,
   errorMessage?: string,
