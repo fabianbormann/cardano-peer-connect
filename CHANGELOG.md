@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.0.0...v1.0.1) (2023-03-07)
+
+
+### Bug Fixes
+
+* increase minor version to prevent conflicts with the npmjs package history ([2351cb4](https://github.com/fabianbormann/cardano-peer-connect/commit/2351cb47609f48fd9e35902292af08957f927a0e))
+
 ## 1.0.0 (2023-03-07)
 
 
