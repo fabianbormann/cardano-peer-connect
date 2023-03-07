@@ -1,6 +1,6 @@
 {
   "name": "@fabianbormann/cardano-peer-connect",
-  "version": "1.1.0",
+  "version": "1.0.0",
   "description": "This library aims to provide an abstract class to simplify to wallet implementation for CIP-????",
   "main": "dist/index.js",
   "module": "dist/index.js",
