@@ -228,7 +228,7 @@ export class DAppPeerConnect {
 
     this.meerkat.register(
       'api',
-      (address: string, args: { api: PeerConnectApi }, callback: Function) => {
+      (address: string, args: { api: PeerConnectApi }, callback: (args: IConnectMessage) => void) => {
 
         if (address !== this.connectedWallet) {
 
@@ -275,6 +275,21 @@ export class DAppPeerConnect {
           isEnabled: () => new Promise((resolve, reject) => resolve(true)),
           enable: () => new Promise((resovle, reject) => resovle(api)),
         };
+
+        if(this.isWalletNameInjected(args.api.name)) {
+
+          this.logger.info(`Not injecting wallet api. API for wallet '${args.api.name}' is already injected.`)
+          return callback({
+            dApp: this.dAppInfo,
+            connected: false,
+            error: true,
+            errorMessage: `Wallet with name ${args.api.name} is already injected.`
+          })
+        }
+
+        if(!this.isP2pWalletCompliantName(args.api.name)) {
+          this.logger.warn(`Injected wallet does not contain 'p2p' in name, this is discouraged. `)
+        }
 
         (window as any).cardano = (window as any).cardano || {};
         (window as any).cardano[args.api.name] = cip30Api;
@@ -343,6 +358,26 @@ export class DAppPeerConnect {
     return Object.keys(globalCardano)
       .filter((client) => typeof globalCardano[client].identifier === 'string')
       .map((client) => globalCardano[client].identifier);
+  }
+
+  /**
+   * Checks if wallet with name is already injected into global cardano namespace.
+   * @param name
+   */
+  private isWalletNameInjected = (name: string) => {
+
+    const globalCardano = (window as any).cardano || {};
+
+    return Object.keys(globalCardano).find((apiName) => apiName === name)
+  }
+
+  /**
+   * Checks if wallet name contains the string p2p to distinguish from other injection.
+   * @param name
+   */
+  private isP2pWalletCompliantName = (name: string) => {
+
+    return name.includes("p2p")
   }
 
   generateQRCode(canvas: HTMLElement) {
