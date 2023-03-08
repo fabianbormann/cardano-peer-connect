@@ -228,7 +228,7 @@ export class DAppPeerConnect {
 
     this.meerkat.register(
       'api',
-      (address: string, args: { api: PeerConnectApi }, callback: Function) => {
+      (address: string, args: { api: PeerConnectApi }, callback: (args: IConnectMessage) => void) => {
 
         if (address !== this.connectedWallet) {
 
@@ -276,6 +276,21 @@ export class DAppPeerConnect {
           enable: () => new Promise((resovle, reject) => resovle(api)),
         };
 
+        if(this.isWalletNameInjected(args.api.name)) {
+
+          this.logger.info(`Not injecting wallet api. API for wallet '${args.api.name}' is already injected.`)
+          return callback({
+            dApp: this.dAppInfo,
+            connected: false,
+            error: true,
+            errorMessage: `Wallet with name ${args.api.name} is already injected.`
+          })
+        }
+
+        if(!this.isP2pWalletCompliantName(args.api.name)) {
+          this.logger.warn(`Injected wallet does not contain 'p2p' in name, this is discouraged. `)
+        }
+
         (window as any).cardano = (window as any).cardano || {};
         (window as any).cardano[args.api.name] = cip30Api;
         this.logger.info(
@@ -298,7 +313,7 @@ export class DAppPeerConnect {
         this.onDisconnect(address);
       }
 
-      const globalCardano = (window as any).cardanop2p || {};
+      const globalCardano = (window as any).cardano || {};
       const apiName = Object.keys(globalCardano).find(
         (apiName) => globalCardano[apiName].identifier === address
       );
@@ -306,7 +321,7 @@ export class DAppPeerConnect {
         this.logger.info(
           `${this.connectedWallet} disconnected. ${apiName} has been removed from the global window object`
         );
-        delete (window as any).cardanop2p[apiName];
+        delete (window as any).cardano[apiName];
         if (this.onApiEject) {
           this.onApiEject(apiName, address);
         }
@@ -345,6 +360,26 @@ export class DAppPeerConnect {
       .map((client) => globalCardano[client].identifier);
   }
 
+  /**
+   * Checks if wallet with name is already injected into global cardano namespace.
+   * @param name
+   */
+  private isWalletNameInjected = (name: string) => {
+
+    const globalCardano = (window as any).cardano || {};
+
+    return Object.keys(globalCardano).find((apiName) => apiName === name)
+  }
+
+  /**
+   * Checks if wallet name contains the string p2p to distinguish from other injection.
+   * @param name
+   */
+  private isP2pWalletCompliantName = (name: string) => {
+
+    return name.includes("p2p")
+  }
+
   generateQRCode(canvas: HTMLElement) {
     const data = `${this.meerkat.address()}:meerkat:${new Date().getTime()}`;
     var qrcode = new QRCode({
@@ -379,6 +414,7 @@ export abstract class CardanoPeerConnect {
   protected onConnect:                  (connectMessage: IConnectMessage) => void
   protected onDisconnect:               (connectMessage: IConnectMessage) => void
   protected onServerShutdown:           (connectMessage: IConnectMessage) => void
+  protected onApiInject:                (connectMessage: IConnectMessage) => void
 
   protected meerkat : Meerkat | null = null
 
@@ -389,6 +425,7 @@ export abstract class CardanoPeerConnect {
     this.onConnect            = (connectMessage: IConnectMessage) => {}
     this.onDisconnect         = (connectMessage: IConnectMessage) => {}
     this.onServerShutdown     = () => {}
+    this.onApiInject          = () => {}
   }
 
   public setOnConnect         = (onConnectCallback: (connectMessage: IConnectMessage) => void) => {
@@ -406,6 +443,10 @@ export abstract class CardanoPeerConnect {
     this.onServerShutdown     = onServerShutdown
   }
 
+  public setOnApiInject         = (onApiInject: (connectMessage: IConnectMessage) => void) => {
+
+    this.onApiInject          = onApiInject
+  }
 
   public getMeercat(identifier: string): Meerkat | undefined {
     return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
@@ -467,9 +508,24 @@ export abstract class CardanoPeerConnect {
             methods: cip30Functions,
           },
         },
-        () => {}
-      );
-    };
+        (connectMessage: IConnectMessage) => {
+
+          if(!this.meerkat) {
+
+            throw new Error('Meerkat not connected.')
+          }
+
+          if(connectMessage.error) {
+
+            this.meerkat.logger.warn(
+              'Api could note be injected. Error: ' + connectMessage.errorMessage ? connectMessage.errorMessage : 'unknown error.'
+            )
+          }
+
+          this.onApiInject(connectMessage)
+        }
+      )
+    }
 
     // https://cips.cardano.org/cips/cip30/
     const cip30Functions: Array<Cip30Function> = [
