@@ -414,6 +414,7 @@ export abstract class CardanoPeerConnect {
   protected onConnect:                  (connectMessage: IConnectMessage) => void
   protected onDisconnect:               (connectMessage: IConnectMessage) => void
   protected onServerShutdown:           (connectMessage: IConnectMessage) => void
+  protected onApiInject:                (connectMessage: IConnectMessage) => void
 
   protected meerkat : Meerkat | null = null
 
@@ -424,6 +425,7 @@ export abstract class CardanoPeerConnect {
     this.onConnect            = (connectMessage: IConnectMessage) => {}
     this.onDisconnect         = (connectMessage: IConnectMessage) => {}
     this.onServerShutdown     = () => {}
+    this.onApiInject          = () => {}
   }
 
   public setOnConnect         = (onConnectCallback: (connectMessage: IConnectMessage) => void) => {
@@ -441,6 +443,10 @@ export abstract class CardanoPeerConnect {
     this.onServerShutdown     = onServerShutdown
   }
 
+  public setOnApiInject         = (onApiInject: (connectMessage: IConnectMessage) => void) => {
+
+    this.onApiInject          = onApiInject
+  }
 
   public getMeercat(identifier: string): Meerkat | undefined {
     return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
@@ -502,9 +508,24 @@ export abstract class CardanoPeerConnect {
             methods: cip30Functions,
           },
         },
-        () => {}
-      );
-    };
+        (connectMessage: IConnectMessage) => {
+
+          if(!this.meerkat) {
+
+            throw new Error('Meerkat not connected.')
+          }
+
+          if(connectMessage.error) {
+
+            this.meerkat.logger.warn(
+              'Api could note be injected. Error: ' + connectMessage.errorMessage ? connectMessage.errorMessage : 'unknown error.'
+            )
+          }
+
+          this.onApiInject(connectMessage)
+        }
+      )
+    }
 
     // https://cips.cardano.org/cips/cip30/
     const cip30Functions: Array<Cip30Function> = [
