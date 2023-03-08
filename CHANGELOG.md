@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.2](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.0.1...v1.0.2) (2023-03-08)
+
+
+### Features
+
+* add on injected callback ([f96a314](https://github.com/fabianbormann/cardano-peer-connect/commit/f96a3140c23e2e8afde72d39aaf6172454ea26f9))
+* Check wallet name is not injected and is compliant ([076ec39](https://github.com/fabianbormann/cardano-peer-connect/commit/076ec395e36fa6696d97138f574c98c2d5d0d772))
+
+
+### Bug Fixes
+
+* remove last p2p occurrences ([832ffb5](https://github.com/fabianbormann/cardano-peer-connect/commit/832ffb5aea54c0152db778a03425de8992131121))
+* use wallet icon for icon property ([c763e13](https://github.com/fabianbormann/cardano-peer-connect/commit/c763e13609433b5ac79c47ef75fd7d3d08c09119))
+
 ## [1.2.0](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.0.0...v1.2.0) (2023-03-07)
 
 
