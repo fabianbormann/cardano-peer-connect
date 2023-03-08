@@ -463,7 +463,7 @@ export abstract class CardanoPeerConnect {
           api: {
             apiVersion: this.walletInfo.version,
             name: this.walletInfo.name,
-            icon: this.walletInfo.name,
+            icon: this.walletInfo.icon,
             methods: cip30Functions,
           },
         },
