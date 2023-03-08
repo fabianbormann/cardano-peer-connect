@@ -298,7 +298,7 @@ export class DAppPeerConnect {
         this.onDisconnect(address);
       }
 
-      const globalCardano = (window as any).cardanop2p || {};
+      const globalCardano = (window as any).cardano || {};
       const apiName = Object.keys(globalCardano).find(
         (apiName) => globalCardano[apiName].identifier === address
       );
@@ -306,7 +306,7 @@ export class DAppPeerConnect {
         this.logger.info(
           `${this.connectedWallet} disconnected. ${apiName} has been removed from the global window object`
         );
-        delete (window as any).cardanop2p[apiName];
+        delete (window as any).cardano[apiName];
         if (this.onApiEject) {
           this.onApiEject(apiName, address);
         }
