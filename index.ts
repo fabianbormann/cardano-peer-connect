@@ -14,7 +14,7 @@ import type {
 } from './types';
 import QRCode from 'qrcode-svg';
 import Logger from '@fabianbormann/meerkat/dist/logger';
-
+import { identicon } from '@basementuniverse/marble-identicons';
 export class DAppPeerConnect {
 
   private meerkat: Meerkat;
@@ -22,6 +22,8 @@ export class DAppPeerConnect {
   logger: Logger;
 
   private readonly dAppInfo: IDAppInfos
+
+  protected identicon: string | null = null
 
   protected onConnect?: (address: string) => void;
   protected onDisconnect?: (address: string) => void;
@@ -119,6 +121,8 @@ export class DAppPeerConnect {
                 connected: true,
                 error: false
               });
+
+              this.generateIdenticon()
 
               if (this.onConnect) {
 
@@ -405,6 +409,15 @@ export class DAppPeerConnect {
   getSeed() {
     return this.meerkat.seed;
   }
+
+  public generateIdenticon = () => {
+
+    this.identicon = PeerConnectIdenticon.getBase64Identicon(this.connectedWallet + this.getAddress())
+  }
+
+  public getIdenticon = () => {
+    return this.identicon
+  }
 }
 
 export abstract class CardanoPeerConnect {
@@ -415,6 +428,7 @@ export abstract class CardanoPeerConnect {
   protected onDisconnect:               (connectMessage: IConnectMessage) => void
   protected onServerShutdown:           (connectMessage: IConnectMessage) => void
   protected onApiInject:                (connectMessage: IConnectMessage) => void
+  protected identicon: string | null = null
 
   protected meerkat : Meerkat | null = null
 
@@ -568,12 +582,27 @@ export abstract class CardanoPeerConnect {
           )
         }
 
+        this.generateIdenticon()
+
         this.onConnect(connectStatus)
       });
     });
 
     this.meerkats.push(this.meerkat);
     return this.meerkat.seed;
+  }
+
+  public generateIdenticon = () => {
+
+    if(!this.meerkat?.address()) {
+      throw new Error('Server meerkat address not defined.')
+    }
+
+    if(!this.meerkat?.identifier) {
+      throw new Error('Client meerkat address not defined.')
+    }
+
+    this.identicon = PeerConnectIdenticon.getBase64Identicon(this.meerkat?.address() + this.meerkat?.identifier)
   }
 
 
@@ -595,6 +624,10 @@ export abstract class CardanoPeerConnect {
     })
   }
 
+  public getIdenticon = () => {
+    return this.identicon
+  }
+
   protected abstract getNetworkId(): Promise<number>;
   protected abstract getUtxos(amount?: Cbor, paginate?: Paginate): Promise<Cbor[] | null>;
   protected abstract getCollateral(params?: { amount?: Cbor }): Promise<Cbor[] | null>;
@@ -606,4 +639,27 @@ export abstract class CardanoPeerConnect {
   protected abstract signTx(tx: Cbor, partialSign: boolean): Promise<Cbor>;
   protected abstract signData(addr: string, payload: Bytes): Promise<Cip30DataSignature>;
   protected abstract submitTx(tx: Cbor): Promise<string>;
+}
+
+
+class PeerConnectIdenticon {
+
+  public static getBase64Identicon = (hash: string): string | null => {
+
+    if(hash.length < 68) {
+
+      console.warn('Meerkat connection hash is to short. Not generating identicon.')
+
+      return null
+    }
+
+    return identicon(
+      hash.split('').reverse().map((char: string, index: number) => (index > 0 && index % 10 === 0) ? '-': char).join(''),
+      {
+        size: 100,
+        baseSeed: 'cardano-peer-connect',
+        fontSize: 0.17,
+        initialsColours: ['#000000', '#FF0000', '#0000FF']
+      }).toDataURL()
+  }
 }

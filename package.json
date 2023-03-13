@@ -30,6 +30,7 @@
     "webpack-cli": "^5.0.1"
   },
   "dependencies": {
+    "@basementuniverse/marble-identicons": "^0.1.2",
     "@fabianbormann/meerkat": "^1.0.10",
     "qrcode-svg": "^1.1.0"
   }
