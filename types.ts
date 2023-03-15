@@ -59,6 +59,7 @@ export interface IConnectMessage {
   connected: boolean,
   error: boolean,
   errorMessage?: string,
+  autoConnect?: boolean
 
 }
 
