@@ -80,7 +80,7 @@ export interface DAppPeerConnectParameters {
   loggingEnabled?: boolean;
   verifyConnection?: (
     walletInfo: IWalletInfo,
-    callback: (granted: boolean) => void
+    callback: (granted: boolean, allowAutoConnect: boolean) => void
   ) => void;
   onConnect?: (address: string) => void;
   onDisconnect?: (address: string) => void;

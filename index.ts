@@ -108,7 +108,12 @@ export class DAppPeerConnect {
       (address: string, walletInfo: IWalletInfo, callback: (args: IConnectMessage) => void) => {
 
         if (!this.connectedWallet) {
-          const connectWallet = (granted: boolean) => {
+          const connectWallet = (granted: boolean, allowAutoConnect: boolean = false) => {
+
+            if(walletInfo.requestAutoconnect && granted && allowAutoConnect) {
+
+              AutoConnectHelper.addAutoConnectId(address)
+            }
 
             if (granted) {
 
@@ -119,7 +124,8 @@ export class DAppPeerConnect {
                 dApp: this.dAppInfo,
                 address: address,
                 connected: true,
-                error: false
+                error: false,
+                autoConnect: allowAutoConnect
               });
 
               this.generateIdenticon()
@@ -135,7 +141,8 @@ export class DAppPeerConnect {
                 address: address,
                 connected: false,
                 error: true,
-                errorMessage: `User denied connection to ${address}`
+                errorMessage: `User denied connection to ${address}`,
+                autoConnect: allowAutoConnect
               })
 
               this.logger.info(`User denied connection to ${address}`);
@@ -143,12 +150,23 @@ export class DAppPeerConnect {
           };
 
           if (typeof verifyConnection !== 'undefined') {
-            verifyConnection({
-              ...walletInfo,
-              address: address
-            }, connectWallet);
+
+            if(AutoConnectHelper.isAutoConnectId(address)) {
+
+              connectWallet(true);
+
+            } else {
+
+              verifyConnection({
+                ...walletInfo,
+                address: address
+              }, connectWallet);
+            }
+
           } else {
+
             connectWallet(true);
+
           }
         } else if (this.connectedWallet === address) {
 
@@ -642,7 +660,7 @@ export abstract class CardanoPeerConnect {
 }
 
 
-class PeerConnectIdenticon {
+export class PeerConnectIdenticon {
 
   public static getBase64Identicon = (hash: string): string | null => {
 
@@ -661,5 +679,62 @@ class PeerConnectIdenticon {
         fontSize: 0.17,
         initialsColours: ['#000000', '#FF0000', '#0000FF']
       }).toDataURL()
+  }
+}
+
+export class AutoConnectHelper {
+
+  private static storageKey = 'cardano-peer-autoconnect-id'
+
+  public static addAutoConnectId = (id: string) :void => {
+
+    let autoConnectIds = []
+
+    const ids = localStorage.getItem(this.storageKey)
+
+    if(ids !== null) {
+      autoConnectIds = JSON.parse(ids)
+    }
+
+    if(this.isAutoConnectId(id)) {
+      return
+    }
+
+    autoConnectIds.push(id)
+
+    localStorage.setItem(this.storageKey, JSON.stringify(autoConnectIds));
+  }
+
+  public static getAutoConnectIds = (): string[] => {
+
+    return JSON.parse(localStorage.getItem(this.storageKey) ?? '[]')
+  }
+
+  public static isAutoConnectId = (id: string): boolean => {
+
+    return this.getAutoConnectIds().includes(id)
+  }
+
+  public static resetAutoConnectIds = ():void => {
+
+    localStorage.setItem(this.storageKey, JSON.stringify([]));
+  }
+
+  public static removeAutoConnectId = (id: string): void => {
+    let autoConnectIds = []
+    const ids = localStorage.getItem(this.storageKey)
+
+    if(ids !== null) {
+      autoConnectIds = JSON.parse(ids)
+    }
+
+    const index = autoConnectIds.indexOf(id)
+
+    if(index !== -1) {
+      autoConnectIds = autoConnectIds.splice(index, 1)
+
+      localStorage.setItem(this.storageKey, JSON.stringify(autoConnectIds));
+      return
+    }
   }
 }
