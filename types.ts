@@ -68,7 +68,7 @@ export interface IWalletInfo {
   name: string,
   version: string,
   icon: string
-
+  requestAutoconnect?: boolean
 }
 
 
