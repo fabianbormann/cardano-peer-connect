@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.2.2](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.1...v1.2.2) (2023-03-16)
+
+
+### Features
+
+* Add autoConnect to ConnectMessage ([c9e4a89](https://github.com/fabianbormann/cardano-peer-connect/commit/c9e4a892acd8341777ccdae9e47b22c43c3a2224))
+* Add dependency for marble-identicons ([9171d60](https://github.com/fabianbormann/cardano-peer-connect/commit/9171d602e5e613185600e090ae523a74f1ef5b69))
+* Add identicon ([460d5c2](https://github.com/fabianbormann/cardano-peer-connect/commit/460d5c235ec5afecfa3e3cef6db1ffdbf7ad92fb))
+* Add requestAutoconnect property ([82b104c](https://github.com/fabianbormann/cardano-peer-connect/commit/82b104c9d7738e2ef1ca8c48e337160395e29faf))
+* Added autoconnect implementation ([e1067d2](https://github.com/fabianbormann/cardano-peer-connect/commit/e1067d27ff0dc9c7b95df16e8ef7fa7f965e97e8))
+
 ## [1.2.1](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.0...v1.2.1) (2023-03-08)
 
 
