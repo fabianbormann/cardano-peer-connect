@@ -59,6 +59,7 @@ export interface IConnectMessage {
   connected: boolean,
   error: boolean,
   errorMessage?: string,
+  autoConnect?: boolean
 
 }
 
@@ -68,7 +69,7 @@ export interface IWalletInfo {
   name: string,
   version: string,
   icon: string
-
+  requestAutoconnect?: boolean
 }
 
 
@@ -79,7 +80,7 @@ export interface DAppPeerConnectParameters {
   loggingEnabled?: boolean;
   verifyConnection?: (
     walletInfo: IWalletInfo,
-    callback: (granted: boolean) => void
+    callback: (granted: boolean, allowAutoConnect: boolean) => void
   ) => void;
   onConnect?: (address: string) => void;
   onDisconnect?: (address: string) => void;
