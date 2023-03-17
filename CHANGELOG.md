@@ -2,6 +2,9 @@
 
 ## [1.2.3](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.2...v1.2.3) (2023-03-17)
 
+### Features
+
+* Allow injection of experimental features as defined in CIP30 ([faf773c](https://github.com/fabianbormann/cardano-peer-connect/commit/faf773c1b33d62368f479c14439a587e366e980c))
 
 ### Bug Fixes
 
