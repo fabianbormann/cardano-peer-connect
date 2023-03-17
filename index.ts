@@ -15,7 +15,17 @@ import type {
 import QRCode from 'qrcode-svg';
 import Logger from '@fabianbormann/meerkat/dist/logger';
 import { identicon } from '@basementuniverse/marble-identicons';
-export class DAppPeerConnect {
+import {
+  Value,
+  ExperimentalContainer,
+
+  buildApiCalls,
+  createTypeMapping,
+  serializeTypeMapping,
+  registerExperimentalEndpoint
+} from './lib/ExperimentalContainer';
+
+class DAppPeerConnect {
 
   private meerkat: Meerkat;
   private connectedWallet: string | null = null;
@@ -266,7 +276,7 @@ export class DAppPeerConnect {
         }
 
         const api: {
-          [key in Cip30Function]?: Function;
+          [key in Cip30Function | 'experimental']?: Function | Record<string, Value>;
         } = {};
 
         for (const method of args.api.methods) {
@@ -289,11 +299,18 @@ export class DAppPeerConnect {
           };
         }
 
+
+        const initialExperimentalApi = buildApiCalls(this.meerkat, address, args.api.experimentalApi,     'invokeExperimental')
+        const fullExperimentalApi    = buildApiCalls(this.meerkat, address, args.api.fullExperimentalApi, 'invokeEnableExperimental')
+
+        api['experimental'] = fullExperimentalApi
+
         const cip30Api: Cip30Api = {
           apiVersion: args.api.apiVersion,
           name: args.api.name,
           icon: args.api.icon,
           identifier: address,
+          experimental: initialExperimentalApi,
           isEnabled: () => new Promise((resolve, reject) => resolve(true)),
           enable: () => new Promise((resovle, reject) => resovle(api)),
         };
@@ -438,7 +455,7 @@ export class DAppPeerConnect {
   }
 }
 
-export abstract class CardanoPeerConnect {
+abstract class CardanoPeerConnect {
 
   protected meerkats: Array<Meerkat> = [];
   protected walletInfo: IWalletInfo
@@ -449,6 +466,8 @@ export abstract class CardanoPeerConnect {
   protected identicon: string | null = null
 
   protected meerkat : Meerkat | null = null
+  protected _cip30ExperimentalApi?: ExperimentalContainer<any>;
+  protected _cip30EnableExperimentalApi?: ExperimentalContainer<any>;
 
   constructor(walletInfo: IWalletInfo) {
 
@@ -478,6 +497,16 @@ export abstract class CardanoPeerConnect {
   public setOnApiInject         = (onApiInject: (connectMessage: IConnectMessage) => void) => {
 
     this.onApiInject          = onApiInject
+  }
+
+  public setExperimentalApi<T extends Record<keyof T, Value>>(dynamicObj: ExperimentalContainer<T>): void {
+
+    this._cip30ExperimentalApi = dynamicObj
+  }
+
+  public setEnableExperimentalApi<T extends Record<keyof T, Value>>(dynamicObj: ExperimentalContainer<T>): void {
+
+    this._cip30EnableExperimentalApi = dynamicObj
   }
 
   public getMeercat(identifier: string): Meerkat | undefined {
@@ -520,7 +549,10 @@ export abstract class CardanoPeerConnect {
           }
         }
       }
-    );
+    )
+
+    registerExperimentalEndpoint(this.meerkat, 'invokeExperimental',       this._cip30ExperimentalApi!,       identifier)
+    registerExperimentalEndpoint(this.meerkat, 'invokeEnableExperimental', this._cip30EnableExperimentalApi!, identifier)
 
     const injectApi = () => {
 
@@ -529,17 +561,24 @@ export abstract class CardanoPeerConnect {
         throw new Error('Merrkat not connected.')
       }
 
+      const expApiTypeMapping     = createTypeMapping(this._cip30ExperimentalApi       ?? new ExperimentalContainer<any>({}))
+      const expFullApiTypeMapping = createTypeMapping(this._cip30EnableExperimentalApi ?? new ExperimentalContainer<any>({}))
+
+      let args = {
+        api: {
+          apiVersion: this.walletInfo.version,
+          name: this.walletInfo.name,
+          icon: this.walletInfo.icon,
+          methods: cip30Functions,
+          experimentalApi: serializeTypeMapping(expApiTypeMapping),
+          fullExperimentalApi: serializeTypeMapping(expFullApiTypeMapping)
+        },
+      };
+
       this.meerkat.rpc(
         identifier,
         'api',
-        {
-          api: {
-            apiVersion: this.walletInfo.version,
-            name: this.walletInfo.name,
-            icon: this.walletInfo.icon,
-            methods: cip30Functions,
-          },
-        },
+        args,
         (connectMessage: IConnectMessage) => {
 
           if(!this.meerkat) {
@@ -660,7 +699,7 @@ export abstract class CardanoPeerConnect {
 }
 
 
-export class PeerConnectIdenticon {
+class PeerConnectIdenticon {
 
   public static getBase64Identicon = (hash: string): string | null => {
 
@@ -682,7 +721,7 @@ export class PeerConnectIdenticon {
   }
 }
 
-export class AutoConnectHelper {
+class AutoConnectHelper {
 
   private static storageKey = 'cardano-peer-autoconnect-id'
 
@@ -737,4 +776,15 @@ export class AutoConnectHelper {
       return
     }
   }
+}
+
+export {
+
+  DAppPeerConnect,
+  CardanoPeerConnect,
+
+  PeerConnectIdenticon,
+  AutoConnectHelper,
+
+  ExperimentalContainer,
 }
