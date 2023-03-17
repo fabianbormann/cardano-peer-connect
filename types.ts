@@ -1,3 +1,5 @@
+import { Value } from './lib/ExperimentalContainer';
+
 export type Cip30Function =
   | 'getNetworkId'
   | 'getUtxos'
@@ -10,6 +12,8 @@ export type Cip30Function =
   | 'signTx'
   | 'signData'
   | 'submitTx';
+
+export type ExperimentalRpcEndpoint = 'invokeExperimental' | 'invokeEnableExperimental'
 
 export type Cbor = string;
 export type Bytes = string;
@@ -32,13 +36,16 @@ export type PeerConnectApi = {
   name: string;
   icon: string;
   methods: Array<Cip30Function>;
-};
+  experimentalApi: string // This is a serialized TypeMapping
+  fullExperimentalApi: string // This is a serialized TypeMapping
+}
 
 export type Cip30Api = {
   enable: () => Promise<{
-    [key in Cip30Function]?: Function;
+    [key in Cip30Function | 'experimental']?: Function | Record<string, Value>;
   }>;
   isEnabled: () => Promise<boolean>;
+  experimental: Record<string, Value>,
   apiVersion: string;
   icon: string;
   name: string;
