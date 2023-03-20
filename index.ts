@@ -39,11 +39,6 @@ class DAppPeerConnect {
   protected onDisconnect?: (address: string) => void;
   protected onApiEject?: (name: string, address: string) => void;
   protected onApiInject?: (name: string, address: string) => void;
-
-  private connectBackTimeout
-
-  private startParams: DAppPeerConnectParameters
-
   constructor({
     dAppInfo,
     seed,
@@ -56,19 +51,7 @@ class DAppPeerConnect {
     onApiInject,
   }: DAppPeerConnectParameters) {
 
-
     this.dAppInfo = dAppInfo
-    this.startParams = {
-      dAppInfo,
-      seed,
-      announce,
-      loggingEnabled,
-      verifyConnection,
-      onConnect,
-      onDisconnect,
-      onApiEject,
-      onApiInject,
-    }
 
     this.meerkat = new Meerkat({
       seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
@@ -110,93 +93,7 @@ class DAppPeerConnect {
       }
     });
 
-    let shouldConnectBack = false
-
-   const createTimeout = () => {
-
-     return setTimeout(() => {
-
-       if(this.connectBackTimeout) {
-
-         clearTimeout(this.connectBackTimeout)
-       }
-
-       if(!connected || !lastConnectedWalletSeen) {
-
-         console.log('wait as not connected nor wallet not seen', connected, lastConnectedWalletSeen)
-
-         this.connectBackTimeout = createTimeout()
-
-         return
-       }
-
-       doConnectBack()
-
-     },1000)
-   }
-
-    const doConnectBack = () => {
-      console.log('timeout to connect to wallet activated')
-
-      shouldConnectBack = true
-      // this.connectBack()
-    }
-
-
-    this.meerkat.on('server', () => {
-
-      if(!this.meerkat) {
-
-        throw new Error('Meerkat not connected.')
-      }
-
-      console.log('SERVER: got event!')
-
-      if(shouldConnectBack) {
-
-        this.connectBack()
-
-        // this.meerkat.rpc(identifier, 'connect', this.walletInfo, (connectStatus: IConnectMessage) => {
-        //
-        //   if (connectStatus.connected) {
-        //
-        //     injectApi();
-        //
-        //   } else {
-        //
-        //
-        //     if(!this.meerkat) {
-        //
-        //       throw new Error('Merrkat not connected.')
-        //     }
-        //
-        //     this.meerkat.logger.warn(
-        //       'Connection failed. Another wallet has already been connected to this dApp.'
-        //     )
-        //   }
-        //
-        //   this.generateIdenticon()
-        //
-        //   this.onConnect(connectStatus)
-        // });
-      }
-
-    });
-
-    this.connectBackTimeout = createTimeout()
-
-    let lastConnectedWalletSeen = false
-
     this.meerkat.on('seen', (address) => {
-
-      console.log('seen address', address)
-
-      if(AutoConnectHelper.getLastConnectedWalletId() === address) {
-        console.log('did saw last connected wallet')
-
-        lastConnectedWalletSeen = true
-      }
-
       const globalCardano = (window as any).cardano || {};
       if (
         Object.keys(globalCardano).find(
@@ -229,8 +126,6 @@ class DAppPeerConnect {
             }
 
             if (granted) {
-
-              AutoConnectHelper.setLastConnectedWallet(address)
 
               this.connectedWallet = address;
               this.logger.info(`Successfully connected ${this.connectedWallet}`);
@@ -504,37 +399,6 @@ class DAppPeerConnect {
       .map((client) => globalCardano[client].identifier);
   }
 
-
-
-  public connectBack(): void {
-
-    const connectTo = AutoConnectHelper.getLastConnectedWalletId()
-
-    if(!connectTo) {
-
-      console.log('No old wallet connection found.')
-
-      return
-    }
-
-
-
-    this.meerkat = new Meerkat({
-      seed: this.startParams.seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
-      announce: this.startParams.announce,
-      loggingEnabled: this.startParams.loggingEnabled,
-    });
-
-    this.meerkat.rpc(connectTo, 'connectBack', () => {
-
-
-      console.log('callback called from remote!')
-      // this.generateIdenticon()
-    });
-  }
-
-
-
   /**
    * Checks if wallet with name is already injected into global cardano namespace.
    * @param name
@@ -601,12 +465,11 @@ abstract class CardanoPeerConnect {
   protected onApiInject:                (connectMessage: IConnectMessage) => void
   protected identicon: string | null = null
 
-  protected meerkat : Meerkat
+  protected meerkat : Meerkat | null = null
   protected _cip30ExperimentalApi?: ExperimentalContainer<any>;
   protected _cip30EnableExperimentalApi?: ExperimentalContainer<any>;
 
-  constructor(walletInfo: IWalletInfo, seed: null | string) {
-
+  constructor(walletInfo: IWalletInfo) {
 
     this.walletInfo           = walletInfo
 
@@ -614,17 +477,6 @@ abstract class CardanoPeerConnect {
     this.onDisconnect         = (connectMessage: IConnectMessage) => {}
     this.onServerShutdown     = () => {}
     this.onApiInject          = () => {}
-
-    this.meerkat = new Meerkat({
-      announce: [
-        'https://pro.passwordchaos.gimbalabs.io',
-        'wss://tracker.files.fm:7073/announce',
-        'wss://tracker.btorrent.xyz',
-        'ws://tracker.files.fm:7072/announce',
-        'wss://tracker.openwebtorrent.com:443/announce',
-      ],
-      seed: seed ? seed : undefined,
-    });
   }
 
   public setOnConnect         = (onConnectCallback: (connectMessage: IConnectMessage) => void) => {
@@ -666,7 +518,6 @@ abstract class CardanoPeerConnect {
     announce?: Array<string>,
     seed?: string | null
   ): string {
-
     this.meerkat = new Meerkat({
       identifier: identifier,
       announce: announce,
@@ -683,21 +534,6 @@ abstract class CardanoPeerConnect {
         }
 
         this.onServerShutdown(args)
-
-      })
-
-    this.meerkat.register(
-      'connectBack',
-      async (address: string, args: IConnectMessage, callback: Function) => {
-
-        console.log('connect back called on me!', address)
-        //
-        // if(address !== args.dApp.address) {
-        //
-        //   throw new Error(`Address ${args.address} tries to send shutdown for server, ${args.address}.`)
-        // }
-        //
-        // this.onServerShutdown(args)
 
       })
 
@@ -888,7 +724,6 @@ class PeerConnectIdenticon {
 class AutoConnectHelper {
 
   private static storageKey = 'cardano-peer-autoconnect-id'
-  private static lastConnectedKey = 'cardano-peer-last-wallet-id'
 
   public static addAutoConnectId = (id: string) :void => {
 
@@ -940,16 +775,6 @@ class AutoConnectHelper {
       localStorage.setItem(this.storageKey, JSON.stringify(autoConnectIds));
       return
     }
-  }
-
-  public static setLastConnectedWallet = (walletId: string) => {
-
-    localStorage.setItem(this.lastConnectedKey, walletId);
-  }
-
-  public static getLastConnectedWalletId = (): string | null => {
-
-    return localStorage.getItem(this.lastConnectedKey);
   }
 }
 
