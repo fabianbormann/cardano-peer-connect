@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.2.4](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.3...v1.2.4) (2023-03-21)
+
+
+### Features
+
+* Add bidirectional connection ([9c34b9c](https://github.com/fabianbormann/cardano-peer-connect/commit/9c34b9ce84427d476db501225d041e0630646b90))
+* Add useWalletDiscovery parameter ([5f657ee](https://github.com/fabianbormann/cardano-peer-connect/commit/5f657ee71c5f35a18af8144c9828f6c828b92b19))
+
+
+### Bug Fixes
+
+* inject wallet names in lowercase into the window.cardano object to prevent an odd behavior ([7cccc15](https://github.com/fabianbormann/cardano-peer-connect/commit/7cccc15c36843d1447365d1a1dac0e99214016a8))
+
 ## [1.2.3](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.2...v1.2.3) (2023-03-17)
 
 ### Features
