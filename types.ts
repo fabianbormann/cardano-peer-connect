@@ -93,4 +93,5 @@ export interface DAppPeerConnectParameters {
   onDisconnect?: (address: string) => void;
   onApiEject?: (name: string, address: string) => void;
   onApiInject?: (name: string, address: string) => void;
+  useWalletDiscovery?: boolean
 }
