@@ -13,7 +13,6 @@ import type {
   IWalletInfo
 } from './types';
 import QRCode from 'qrcode-svg';
-import Logger from '@fabianbormann/meerkat/dist/logger';
 import { identicon } from '@basementuniverse/marble-identicons';
 import {
   Value,
@@ -24,14 +23,18 @@ import {
   serializeTypeMapping,
   registerExperimentalEndpoint
 } from './lib/ExperimentalContainer';
+import { LogLevel } from '@fabianbormann/meerkat/dist/types';
 
 class DAppPeerConnect {
 
   private meerkat: Meerkat;
-  private connectedWallet: string | null = null;
-  logger: Logger;
+  private walletDiscoveryMeerkat: Meerkat | null = null
 
-  private readonly dAppInfo: IDAppInfos
+  private connectedWallet: string | null = null;
+  protected enableLogging: boolean = false
+  protected logger: InfoLogger;
+  protected logLevel: string = 'info'
+  protected readonly dAppInfo: IDAppInfos
 
   protected identicon: string | null = null
 
@@ -39,6 +42,69 @@ class DAppPeerConnect {
   protected onDisconnect?: (address: string) => void;
   protected onApiEject?: (name: string, address: string) => void;
   protected onApiInject?: (name: string, address: string) => void;
+
+  protected setUpDiscoveryMeerkcat = (address?: string) => {
+
+    if(address || AutoConnectHelper.getWalletDiscoveryAddress()) {
+
+      this.meerkat.logger.debug('DApp: create discovery with address', address ?? AutoConnectHelper.getWalletDiscoveryAddress())
+      this.meerkat.logger.debug('DApp: create discovery with seed',    AutoConnectHelper.getWalletAutoDiscoverySeed())
+
+      this.walletDiscoveryMeerkat = new Meerkat({
+        seed: AutoConnectHelper.getWalletAutoDiscoverySeed() ?? undefined,
+        announce: [
+          'https://pro.passwordchaos.gimbalabs.io',
+          'wss://tracker.files.fm:7073/announce',
+          'wss://tracker.btorrent.xyz',
+          'wss://tracker.openwebtorrent.com:443/announce',
+        ],
+        loggingEnabled: this.enableLogging,
+        identifier: address ?? AutoConnectHelper.getWalletDiscoveryAddress()!
+      }).setMaxListeners(20)
+      this.walletDiscoveryMeerkat.logger.logLevel = this.logLevel as LogLevel
+
+      this.meerkat.logger.debug('DApp: walletDiscoveryMeerkat address:', this.walletDiscoveryMeerkat.address())
+
+      AutoConnectHelper.saveWalletAutoDiscoverySeed(this.walletDiscoveryMeerkat.seed)
+
+      this.meerkat.logger.debug("DApp: Adding onServer event for discover wallet discovery meerkat.")
+
+      this.walletDiscoveryMeerkat.on('server', () => {
+
+        this.meerkat.logger.debug('DApp: SERVER discovery: received on server event')
+
+        if(!this.walletDiscoveryMeerkat) {
+
+          throw new Error('Meerkat not connected.')
+        }
+
+        this.meerkat.logger.debug('DApp: SERVER discovery: Calling rpc connect on wallet.')
+
+        this.walletDiscoveryMeerkat.rpc(AutoConnectHelper.getWalletDiscoveryAddress()!, 'connect', { dappAddress: this.meerkat.address() }, (connectStatus: any) => {
+
+          this.meerkat.logger.debug('DApp: SERVER discovery: Client connect status: ', connectStatus)
+
+        });
+      })
+
+    }
+  }
+
+  public setLogLevel = (level: string, meerkat: boolean = false) => {
+
+    this.logLevel = level
+
+    this.logger.setLevel(level)
+
+    if(this.meerkat && meerkat) {
+      this.meerkat.logger.logLevel = level as LogLevel
+    }
+
+    if(this.walletDiscoveryMeerkat && meerkat) {
+      this.walletDiscoveryMeerkat.logger.logLevel = level as LogLevel
+    }
+  }
+
   constructor({
     dAppInfo,
     seed,
@@ -49,15 +115,34 @@ class DAppPeerConnect {
     onDisconnect,
     onApiEject,
     onApiInject,
+    useWalletDiscovery
   }: DAppPeerConnectParameters) {
 
     this.dAppInfo = dAppInfo
+
+    if(loggingEnabled) {
+      this.enableLogging = loggingEnabled
+    }
 
     this.meerkat = new Meerkat({
       seed: seed || localStorage.getItem('meerkat-dapp-seed') || undefined,
       announce: announce,
       loggingEnabled: loggingEnabled,
-    });
+    }).setMaxListeners(20);
+
+    this.logger = new InfoLogger('DAppPeerConnect',loggingEnabled, 'info' );
+    this.meerkat.logger.logLevel = this.logLevel as LogLevel
+
+    if(useWalletDiscovery) {
+
+      setTimeout(() => {
+
+        //initialize discovery meerkat 1 second later
+        this.setUpDiscoveryMeerkcat()
+
+      }, 1000)
+
+    }
 
     if(onConnect) {
       this.onConnect = onConnect
@@ -77,7 +162,6 @@ class DAppPeerConnect {
 
     localStorage.setItem('meerkat-dapp-seed', this.meerkat.seed);
 
-    this.logger = this.meerkat.logger;
     this.logger.info(
       `The generated meerkat address is: ${this.meerkat.address()}`
     );
@@ -257,6 +341,23 @@ class DAppPeerConnect {
         })
       }
     );
+
+    this.meerkat.register(
+      'setDiscovery',
+      (address: string, args: { walletDiscoveryAddress: string }, callback: (args: boolean) => void) => {
+
+        this.logger.debug('DApp: SERVER: setDiscovery with:', args)
+
+        if(useWalletDiscovery) {
+
+          AutoConnectHelper.saveWalletDiscoveryAddress(args.walletDiscoveryAddress)
+
+          return callback(true)
+        } else {
+
+          return callback(false)
+        }
+      })
 
     this.meerkat.register(
       'api',
@@ -464,19 +565,89 @@ abstract class CardanoPeerConnect {
   protected onServerShutdown:           (connectMessage: IConnectMessage) => void
   protected onApiInject:                (connectMessage: IConnectMessage) => void
   protected identicon: string | null = null
-
   protected meerkat : Meerkat | null = null
+  protected logLevel: LogLevel = 'info'
+
+  protected DAppDiscoveryMeerkat : Meerkat | null = null
   protected _cip30ExperimentalApi?: ExperimentalContainer<any>;
   protected _cip30EnableExperimentalApi?: ExperimentalContainer<any>;
 
-  constructor(walletInfo: IWalletInfo) {
+  protected seed : string | null
+  protected discoverySeed : string | null
+  protected announceEndpoints: string[]
+
+  constructor(walletInfo: IWalletInfo, args: {
+    seed?: string | null,
+    announce?: string[],
+    discoverySeed?: string | null,
+    logLevel?: LogLevel
+  } = {}) {
 
     this.walletInfo           = walletInfo
+
+    this.seed                 = args.seed ?? null
+    this.discoverySeed        = args.discoverySeed ?? null
+    this.announceEndpoints    = args.announce ?? [
+      'https://pro.passwordchaos.gimbalabs.io',
+      'wss://tracker.files.fm:7073/announce',
+      'wss://tracker.btorrent.xyz',
+      'ws://tracker.files.fm:7072/announce',
+      'wss://tracker.openwebtorrent.com:443/announce',
+    ]
+    this.logLevel             = args.logLevel ?? 'info'
 
     this.onConnect            = (connectMessage: IConnectMessage) => {}
     this.onDisconnect         = (connectMessage: IConnectMessage) => {}
     this.onServerShutdown     = () => {}
     this.onApiInject          = () => {}
+
+    this.setUpDiscoveryMeerkat()
+  }
+
+  protected setLogLevel = (level: LogLevel) => {
+
+    this.logLevel = level
+
+    if(this.meerkat) {
+      this.meerkat.logger.logLevel = level
+    }
+    if(this.DAppDiscoveryMeerkat) {
+      this.DAppDiscoveryMeerkat.logger.logLevel = level
+    }
+  }
+
+  protected setUpDiscoveryMeerkat = () => {
+
+    this.DAppDiscoveryMeerkat = new Meerkat({
+      announce: this.announceEndpoints,
+      seed: this.discoverySeed ?? AutoConnectHelper.getWalletAutoDiscoverySeed() ?? undefined,
+      loggingEnabled: true,
+    }).setMaxListeners(20);
+
+    this.clearSeen()
+
+    this.DAppDiscoveryMeerkat.logger.logLevel = this.logLevel
+
+    this.DAppDiscoveryMeerkat?.logger.debug('WALLET: discovery address:', this.DAppDiscoveryMeerkat.address())
+
+    if(!this.discoverySeed) {
+
+      AutoConnectHelper.saveWalletAutoDiscoverySeed(this.DAppDiscoveryMeerkat.seed)
+    }
+
+    this.DAppDiscoveryMeerkat.register(
+      'connect',
+      (address: string, params: { dappAddress: string } , callback: (args: any) => void) => {
+
+        this.DAppDiscoveryMeerkat?.logger.debug('Wallet: DApp is connecting to discovery server!', params.dappAddress)
+
+        this.connect(params.dappAddress)
+
+        callback(true)
+      }
+    )
+
+    this.meerkats.push(this.DAppDiscoveryMeerkat);
   }
 
   public setOnConnect         = (onConnectCallback: (connectMessage: IConnectMessage) => void) => {
@@ -513,16 +684,31 @@ abstract class CardanoPeerConnect {
     return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
   }
 
-  public connect(
-    identifier: string,
-    announce?: Array<string>,
-    seed?: string | null
-  ): string {
+  public clearSeen = () => {
+
+    if(this.meerkat) {
+      this.meerkat.logger.debug('WALLET: meerkat clear all seen clients.')
+      this.meerkat.seen = {}
+    }
+
+    if(this.DAppDiscoveryMeerkat) {
+      this.DAppDiscoveryMeerkat.logger.debug('WALLET: discovery meerkat clear all seen clients.')
+      this.DAppDiscoveryMeerkat.seen = {}
+    }
+
+  }
+
+  public connect(identifier: string): string {
+
     this.meerkat = new Meerkat({
       identifier: identifier,
-      announce: announce,
-      seed: seed ? seed : undefined,
-    });
+      announce: this.announceEndpoints,
+      seed: this.seed ?? undefined,
+    }).setMaxListeners(20);
+    this.meerkat.logger.logLevel = this.logLevel
+
+    this.meerkat?.logger.debug('WALLET: calling to connect to DApp:', identifier)
+
 
     this.meerkat.register(
       'shutdown',
@@ -533,8 +719,12 @@ abstract class CardanoPeerConnect {
           throw new Error(`Address ${args.address} tries to send shutdown for server, ${args.address}.`)
         }
 
+        this.clearSeen()
         this.onServerShutdown(args)
 
+        this.meerkat?.logger.debug('WALLET: setup discovery again after server did shutdown.')
+
+        this.setUpDiscoveryMeerkat()
       })
 
     this.meerkat.register(
@@ -615,6 +805,8 @@ abstract class CardanoPeerConnect {
 
     this.meerkat.on('server', () => {
 
+      this.meerkat?.logger.debug('WALLET: DApp server seen, create connection!')
+
       if(!this.meerkat) {
 
         throw new Error('Meerkat not connected.')
@@ -622,12 +814,20 @@ abstract class CardanoPeerConnect {
 
       this.meerkat.rpc(identifier, 'connect', this.walletInfo, (connectStatus: IConnectMessage) => {
 
+        this.meerkat?.logger.debug('WALLET: DApp now connected with status:', connectStatus)
+
         if (connectStatus.connected) {
 
           injectApi();
 
-        } else {
+          if(this.DAppDiscoveryMeerkat) {
 
+            //close discovery meerkat as we are connected
+            this.meerkat?.logger.debug('WALLET: Close discovery after successfully connected to server.')
+            this.DAppDiscoveryMeerkat.close()
+
+          }
+        } else {
 
           if(!this.meerkat) {
 
@@ -640,6 +840,20 @@ abstract class CardanoPeerConnect {
         }
 
         this.generateIdenticon()
+
+        if(this.DAppDiscoveryMeerkat?.address()) {
+
+          this.meerkat!.rpc(identifier, 'setDiscovery', { walletDiscoveryAddress: this.DAppDiscoveryMeerkat.address() }, (connectStatus: boolean) => {
+
+            this.meerkat?.logger.debug('WALLET: result of setDiscovery call', connectStatus)
+          })
+
+        } else {
+
+          this.meerkat?.logger.debug('WALLET: discovery meerkat has no address ?')
+        }
+
+        this.meerkat?.logger.debug('WALLET: calling onConnect event callback from wallet!', this.onConnect)
 
         this.onConnect(connectStatus)
       });
@@ -677,7 +891,11 @@ abstract class CardanoPeerConnect {
         this.meerkat.close()
       }
 
+      this.clearSeen()
       this.onDisconnect(connectStatus)
+
+      this.meerkat?.logger.debug('WALLET: setup discovery after disconnect was called')
+      this.setUpDiscoveryMeerkat()
     })
   }
 
@@ -724,6 +942,8 @@ class PeerConnectIdenticon {
 class AutoConnectHelper {
 
   private static storageKey = 'cardano-peer-autoconnect-id'
+  private static discoveryStorageKey = 'cardano-peer-discovery-id'
+  private static walletDiscoveryStorageKey = 'cardano-wallet-discovery-address'
 
   public static addAutoConnectId = (id: string) :void => {
 
@@ -776,6 +996,79 @@ class AutoConnectHelper {
       return
     }
   }
+
+  public static saveWalletAutoDiscoverySeed = (id: string):void => {
+
+    localStorage.setItem(this.discoveryStorageKey, id);
+  }
+
+  public static getWalletAutoDiscoverySeed = (): string | null => {
+
+    return localStorage.getItem(this.discoveryStorageKey)
+  }
+
+
+  public static saveWalletDiscoveryAddress = (id: string):void => {
+
+    localStorage.setItem(this.walletDiscoveryStorageKey, id);
+  }
+
+  public static getWalletDiscoveryAddress = (): string | null => {
+
+    return localStorage.getItem(this.walletDiscoveryStorageKey)
+  }
+
+}
+
+/**
+ * ToDo: replace with full Logger implementation.
+ * The logger in meerkat could not be used, therefore this is a minimal logger implementation.
+ */
+class InfoLogger {
+
+  protected level = 'info'
+  protected enable = true
+  protected name = "InfoLogger"
+
+  public constructor(name: string, enable: boolean = true, level: string = 'info') {
+    this.name = name
+    this.level = level
+    this.enable = enable
+  }
+
+  public setLevel = (level: string) => {
+
+    this.level = level
+  }
+
+  public info = (...args : Array<any>) => {
+
+    this.doLog('info', ...args)
+  }
+
+  public debug = (...args : Array<any>) => {
+
+    if(this.level === 'debug') {
+      this.doLog('debug', ...args)
+    }
+  }
+
+  public warn = (...args : Array<any>) => {
+
+    this.doLog('warn', ...args)
+  }
+
+  public error = (...args : Array<any>) => {
+
+    this.doLog('error', ...args)
+  }
+
+  public doLog = (level: string, ...message : Array<any> ) => {
+    if(this.enable) {
+      console.log(`${this.level}:`, ...message)
+    }
+  }
+
 }
 
 export {
