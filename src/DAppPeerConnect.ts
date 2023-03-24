@@ -361,7 +361,7 @@ export default class DAppPeerConnect {
       'api',
       (
         address: string,
-        args: { api: PeerConnectApi },
+        args: { api: PeerConnectApi, overwrite?: boolean },
         callback: (args: IConnectMessage) => void
       ) => {
         if (address !== this.connectedWallet) {
@@ -369,7 +369,7 @@ export default class DAppPeerConnect {
         }
 
         const injectedClients = this.getInjectedApis();
-        if (injectedClients.includes(address)) {
+        if (injectedClients.includes(address) && !args.overwrite) {
           this.logger.info(`${address} already injected`);
           return;
         }
@@ -403,6 +403,7 @@ export default class DAppPeerConnect {
           args.api.experimentalApi,
           'invokeExperimental'
         );
+
         const fullExperimentalApi = buildApiCalls(
           this.meerkat,
           address,
@@ -422,7 +423,7 @@ export default class DAppPeerConnect {
           enable: () => new Promise((resovle, reject) => resovle(api)),
         };
 
-        if (this.isWalletNameInjected(args.api.name)) {
+        if (this.isWalletNameInjected(args.api.name) && !args.overwrite) {
           this.logger.info(
             `Not injecting wallet api. API for wallet '${args.api.name}' is already injected.`
           );
