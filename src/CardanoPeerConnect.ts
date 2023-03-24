@@ -31,6 +31,20 @@ export default abstract class CardanoPeerConnect {
   protected logLevel: LogLevel = 'info';
 
   protected DAppDiscoveryMeerkat: Meerkat | null = null;
+  // https://cips.cardano.org/cips/cip30/
+  protected cip30Functions: Array<Cip30Function> = [
+    'getNetworkId',
+    'getUtxos',
+    'getCollateral',
+    'getBalance',
+    'getUsedAddresses',
+    'getUnusedAddresses',
+    'getChangeAddress',
+    'getRewardAddresses',
+    'signTx',
+    'signData',
+    'submitTx',
+  ];
   protected _cip30ExperimentalApi?: ExperimentalContainer<any>;
   protected _cip30EnableExperimentalApi?: ExperimentalContainer<any>;
 
@@ -125,6 +139,10 @@ export default abstract class CardanoPeerConnect {
     this.meerkats.push(this.DAppDiscoveryMeerkat);
   };
 
+  public getDiscoveryMeerkatSeed = () : string | null => {
+    return this.DAppDiscoveryMeerkat?.seed ?? null
+  }
+
   public setOnConnect = (
     onConnectCallback: (connectMessage: IConnectMessage) => void
   ) => {
@@ -177,6 +195,53 @@ export default abstract class CardanoPeerConnect {
       );
       this.DAppDiscoveryMeerkat.seen = {};
     }
+  };
+
+  public injectApi = (identifier: string, overwrite: boolean = false) => {
+    if (!this.meerkat) {
+      throw new Error('Merrkat not connected.');
+    }
+
+    const expApiTypeMapping = createTypeMapping(
+      this._cip30ExperimentalApi ?? new ExperimentalContainer<any>({})
+    );
+    const expFullApiTypeMapping = createTypeMapping(
+      this._cip30EnableExperimentalApi ?? new ExperimentalContainer<any>({})
+    );
+
+    let args = {
+      api: {
+        apiVersion: this.walletInfo.version,
+        name: this.walletInfo.name,
+        icon: this.walletInfo.icon,
+        methods: this.cip30Functions,
+        experimentalApi: serializeTypeMapping(expApiTypeMapping),
+        fullExperimentalApi: serializeTypeMapping(expFullApiTypeMapping),
+      },
+      overwrite: overwrite
+    };
+
+    this.meerkat.rpc(
+      identifier,
+      'api',
+      args,
+      (connectMessage: IConnectMessage) => {
+        if (!this.meerkat) {
+          throw new Error('Meerkat not connected.');
+        }
+
+        if (connectMessage.error) {
+          this.meerkat.logger.warn(
+            'Api could note be injected. Error: ' +
+            connectMessage.errorMessage
+              ? connectMessage.errorMessage
+              : 'unknown error.'
+          );
+        }
+
+        this.onApiInject(connectMessage);
+      }
+    );
   };
 
   public connect(identifier: string): string {
@@ -239,67 +304,6 @@ export default abstract class CardanoPeerConnect {
       identifier
     );
 
-    const injectApi = () => {
-      if (!this.meerkat) {
-        throw new Error('Merrkat not connected.');
-      }
-
-      const expApiTypeMapping = createTypeMapping(
-        this._cip30ExperimentalApi ?? new ExperimentalContainer<any>({})
-      );
-      const expFullApiTypeMapping = createTypeMapping(
-        this._cip30EnableExperimentalApi ?? new ExperimentalContainer<any>({})
-      );
-
-      let args = {
-        api: {
-          apiVersion: this.walletInfo.version,
-          name: this.walletInfo.name,
-          icon: this.walletInfo.icon,
-          methods: cip30Functions,
-          experimentalApi: serializeTypeMapping(expApiTypeMapping),
-          fullExperimentalApi: serializeTypeMapping(expFullApiTypeMapping),
-        },
-      };
-
-      this.meerkat.rpc(
-        identifier,
-        'api',
-        args,
-        (connectMessage: IConnectMessage) => {
-          if (!this.meerkat) {
-            throw new Error('Meerkat not connected.');
-          }
-
-          if (connectMessage.error) {
-            this.meerkat.logger.warn(
-              'Api could note be injected. Error: ' +
-                connectMessage.errorMessage
-                ? connectMessage.errorMessage
-                : 'unknown error.'
-            );
-          }
-
-          this.onApiInject(connectMessage);
-        }
-      );
-    };
-
-    // https://cips.cardano.org/cips/cip30/
-    const cip30Functions: Array<Cip30Function> = [
-      'getNetworkId',
-      'getUtxos',
-      'getCollateral',
-      'getBalance',
-      'getUsedAddresses',
-      'getUnusedAddresses',
-      'getChangeAddress',
-      'getRewardAddresses',
-      'signTx',
-      'signData',
-      'submitTx',
-    ];
-
     this.meerkat.on('server', () => {
       this.meerkat?.logger.debug(
         'WALLET: DApp server seen, create connection!'
@@ -320,7 +324,7 @@ export default abstract class CardanoPeerConnect {
           );
 
           if (connectStatus.connected) {
-            injectApi();
+            this.injectApi(identifier);
 
             if (this.DAppDiscoveryMeerkat) {
               //close discovery meerkat as we are connected
