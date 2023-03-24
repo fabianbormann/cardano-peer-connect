@@ -13,7 +13,9 @@ export type Cip30Function =
   | 'signData'
   | 'submitTx';
 
-export type ExperimentalRpcEndpoint = 'invokeExperimental' | 'invokeEnableExperimental'
+export type ExperimentalRpcEndpoint =
+  | 'invokeExperimental'
+  | 'invokeEnableExperimental';
 
 export type Cbor = string;
 export type Bytes = string;
@@ -36,16 +38,16 @@ export type PeerConnectApi = {
   name: string;
   icon: string;
   methods: Array<Cip30Function>;
-  experimentalApi: string // This is a serialized TypeMapping
-  fullExperimentalApi: string // This is a serialized TypeMapping
-}
+  experimentalApi: string; // This is a serialized TypeMapping
+  fullExperimentalApi: string; // This is a serialized TypeMapping
+};
 
 export type Cip30Api = {
   enable: () => Promise<{
     [key in Cip30Function | 'experimental']?: Function | Record<string, Value>;
   }>;
   isEnabled: () => Promise<boolean>;
-  experimental: Record<string, Value>,
+  experimental: Record<string, Value>;
   apiVersion: string;
   icon: string;
   name: string;
@@ -53,35 +55,30 @@ export type Cip30Api = {
 };
 
 export interface IDAppInfos {
-
-  name: string,
-  url: string,
-  address?: string
+  name: string;
+  url: string;
+  address?: string;
 }
 
 export interface IConnectMessage {
-
-  dApp: IDAppInfos
-  address?: string,
-  connected: boolean,
-  error: boolean,
-  errorMessage?: string,
-  autoConnect?: boolean
-
+  dApp: IDAppInfos;
+  address?: string;
+  connected: boolean;
+  error: boolean;
+  errorMessage?: string;
+  autoConnect?: boolean;
 }
 
 export interface IWalletInfo {
-
-  address?: string,
-  name: string,
-  version: string,
-  icon: string
-  requestAutoconnect?: boolean
+  address?: string;
+  name: string;
+  version: string;
+  icon: string;
+  requestAutoconnect?: boolean;
 }
 
-
 export interface DAppPeerConnectParameters {
-  dAppInfo: IDAppInfos,
+  dAppInfo: IDAppInfos;
   seed?: string;
   announce?: Array<string>;
   loggingEnabled?: boolean;
@@ -93,5 +90,5 @@ export interface DAppPeerConnectParameters {
   onDisconnect?: (address: string) => void;
   onApiEject?: (name: string, address: string) => void;
   onApiInject?: (name: string, address: string) => void;
-  useWalletDiscovery?: boolean
+  useWalletDiscovery?: boolean;
 }

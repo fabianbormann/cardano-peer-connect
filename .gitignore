@@ -1,3 +1,5 @@
+cypress/
+
 dist/
 .DS_Store
 

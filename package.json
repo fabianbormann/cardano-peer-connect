@@ -8,12 +8,14 @@
   "scripts": {
     "bundle": "npm run build && cp dist/index.js bundle.min.js",
     "build": "webpack && tsc --emitDeclarationOnly",
-    "test": "jest"
+    "cy:run": "cypress run",
+    "test": "npm run bundle && cypress run"
   },
   "keywords": [
     "WebRTC",
     "WebTorrent",
-    "wallet"
+    "wallet",
+    "dapp"
   ],
   "author": "",
   "license": "Apache-2.0",
@@ -23,8 +25,7 @@
     "@types/qrcode-svg": "^1.1.1",
     "babel-loader": "^9.1.2",
     "clean-webpack-plugin": "^4.0.0",
-    "jest": "^29.5.0",
-    "ts-jest": "^29.0.5",
+    "cypress": "^12.8.1",
     "typescript": "^5.0.2",
     "webpack": "^5.76.2",
     "webpack-cli": "^5.0.1"

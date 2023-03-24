@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../bundle.min.js"></script>
+    <title>Test dApp</title>
+</head>
+
+<body>
+    <h1>Test dApp</h1>
+    <p>Please scan the QR code or share the address below with your wallet app.</p>
+    <div id="qr-code"></div>
+    <p id="address"></p><button id="button" onclick="copyAddress()">Copy</button>
+    <script>
+        const dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
+            dAppInfo: {
+                name: 'dAppConnectTest',
+                url: 'localhost'
+            },
+            seed: 'BofdLENCoCxJroaUcjbj9gyhiozjR6o6ZnxgMD6TgtvpS6DbGsWi'
+        });
+        dAppConnect.generateQRCode(document.getElementById('qr-code'));
+        document.getElementById('address').innerText = dAppConnect.getAddress();
+
+        function copyAddress(clickElement) {
+            const text = document.getElementById('address').innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                document.getElementById("button").innerText = "Successfully copied!";
+                setTimeout(() => {
+                    document.getElementById("button").innerText = "Copy";
+                }, 500);
+            });
+        }
+    </script>
+</body>
+
+</html>
