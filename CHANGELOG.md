@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.5](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.4...v1.2.5) (2023-03-24)
+
+
+### Features
+
+* add a simple dapp e2e test and a testing pipeline ([c4efff5](https://github.com/fabianbormann/cardano-peer-connect/commit/c4efff5a62c4f6e930a014720321bd0505ea628f))
+* add logger and refactor big index.ts in smaller modules. closes [#28](https://github.com/fabianbormann/cardano-peer-connect/issues/28) ([732fe10](https://github.com/fabianbormann/cardano-peer-connect/commit/732fe1026abf39641cf7ff6b0eb7cddabe3cf3a0))
+* Allow api overwrite ([e9bb87b](https://github.com/fabianbormann/cardano-peer-connect/commit/e9bb87b72cf736ee60c3599f6133cc04ff7784b9))
+
 ## [1.2.4](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.3...v1.2.4) (2023-03-21)
 
 
