@@ -97,9 +97,7 @@ export default abstract class CardanoPeerConnect {
     this.DAppDiscoveryMeerkat = new Meerkat({
       announce: this.announceEndpoints,
       seed:
-        this.discoverySeed ??
-        AutoConnectHelper.getWalletAutoDiscoverySeed() ??
-        undefined,
+        this.discoverySeed ? this.discoverySeed : undefined,
       loggingEnabled: true,
     }).setMaxListeners(20);
 

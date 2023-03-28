@@ -85,9 +85,9 @@ export interface DAppPeerConnectParameters {
   loggingEnabled?: boolean;
   verifyConnection?: (
     walletInfo: IWalletInfo,
-    callback: (granted: boolean, allowAutoConnect: boolean) => void
+    callback: (granted: boolean, allowAutoConnect: boolean, walletInfo?: IWalletInfo) => void
   ) => void;
-  onConnect?: (address: string) => void;
+  onConnect?: (address: string, walletInfo?: IWalletInfo) => void;
   onDisconnect?: (address: string) => void;
   onApiEject?: (name: string, address: string) => void;
   onApiInject?: (name: string, address: string) => void;

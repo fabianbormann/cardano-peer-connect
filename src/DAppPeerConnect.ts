@@ -27,7 +27,7 @@ export default class DAppPeerConnect {
 
   protected identicon: string | null = null;
 
-  protected onConnect?: (address: string) => void;
+  protected onConnect?: (address: string, walletInfo?: IWalletInfo) => void;
   protected onDisconnect?: (address: string) => void;
   protected onApiEject?: (name: string, address: string) => void;
   protected onApiInject?: (name: string, address: string) => void;
@@ -204,7 +204,8 @@ export default class DAppPeerConnect {
         if (!this.connectedWallet) {
           const connectWallet = (
             granted: boolean,
-            allowAutoConnect: boolean = false
+            allowAutoConnect: boolean = false,
+            connectedWalletInfo?: IWalletInfo
           ) => {
             if (walletInfo.requestAutoconnect && granted && allowAutoConnect) {
               AutoConnectHelper.addAutoConnectId(address);
@@ -227,7 +228,7 @@ export default class DAppPeerConnect {
               this.generateIdenticon();
 
               if (this.onConnect) {
-                this.onConnect(address);
+                this.onConnect(address, connectedWalletInfo);
               }
             } else {
               callback({
@@ -245,13 +246,10 @@ export default class DAppPeerConnect {
 
           if (typeof verifyConnection !== 'undefined') {
             if (AutoConnectHelper.isAutoConnectId(address)) {
-              connectWallet(true);
+              connectWallet(true, true, walletInfo);
             } else {
               verifyConnection(
-                {
-                  ...walletInfo,
-                  address: address,
-                },
+                walletInfo,
                 connectWallet
               );
             }
@@ -451,6 +449,12 @@ export default class DAppPeerConnect {
         this.logger.info(
           `injected api of ${args.api.name} into window.cardano`
         );
+
+        callback({
+          dApp: this.dAppInfo,
+          connected: true,
+          error: false
+        });
 
         if (onApiInject) {
           onApiInject(args.api.name, address);
