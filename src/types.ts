@@ -80,13 +80,14 @@ export interface IWalletInfo {
 export interface DAppPeerConnectParameters {
   dAppInfo: IDAppInfos;
   seed?: string;
+  discoverySeed?: string;
   announce?: Array<string>;
   loggingEnabled?: boolean;
   verifyConnection?: (
     walletInfo: IWalletInfo,
     callback: (granted: boolean, allowAutoConnect: boolean) => void
   ) => void;
-  onConnect?: (address: string) => void;
+  onConnect?: (address: string, walletInfo?: IWalletInfo) => void;
   onDisconnect?: (address: string) => void;
   onApiEject?: (name: string, address: string) => void;
   onApiInject?: (name: string, address: string) => void;
