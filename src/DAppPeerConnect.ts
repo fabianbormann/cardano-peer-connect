@@ -32,7 +32,7 @@ export default class DAppPeerConnect {
   protected onApiEject?: (name: string, address: string) => void;
   protected onApiInject?: (name: string, address: string) => void;
 
-  protected setUpDiscoveryMeerkcat = (address?: string) => {
+  protected setUpDiscoveryMeerkcat = (announce: Array<string>, address?: string) => {
     if (address || AutoConnectHelper.getWalletDiscoveryAddress()) {
       this.meerkat.logger.debug(
         'DApp: create discovery with address',
@@ -45,12 +45,7 @@ export default class DAppPeerConnect {
 
       this.walletDiscoveryMeerkat = new Meerkat({
         seed: AutoConnectHelper.getWalletAutoDiscoverySeed() ?? undefined,
-        announce: [
-          'https://pro.passwordchaos.gimbalabs.io',
-          'wss://tracker.files.fm:7073/announce',
-          'wss://tracker.btorrent.xyz',
-          'wss://tracker.openwebtorrent.com:443/announce',
-        ],
+        announce: announce,
         loggingEnabled: this.enableLogging,
         identifier: address ?? AutoConnectHelper.getWalletDiscoveryAddress()!,
       }).setMaxListeners(20);
@@ -113,6 +108,7 @@ export default class DAppPeerConnect {
   constructor({
     dAppInfo,
     seed,
+    discoverySeed,
     announce,
     loggingEnabled,
     verifyConnection,
@@ -126,6 +122,15 @@ export default class DAppPeerConnect {
 
     if (loggingEnabled) {
       this.enableLogging = loggingEnabled;
+    }
+
+    if(!announce) {
+      announce = [
+        'https://pro.passwordchaos.gimbalabs.io',
+        'wss://tracker.files.fm:7073/announce',
+        'wss://tracker.btorrent.xyz',
+        'wss://tracker.openwebtorrent.com:443/announce',
+      ]
     }
 
     this.meerkat = new Meerkat({
@@ -144,7 +149,7 @@ export default class DAppPeerConnect {
     if (useWalletDiscovery) {
       setTimeout(() => {
         //initialize discovery meerkat 1 second later
-        this.setUpDiscoveryMeerkcat();
+        this.setUpDiscoveryMeerkcat(announce!, discoverySeed);
       }, 1000);
     }
 

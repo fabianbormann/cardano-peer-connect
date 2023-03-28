@@ -80,6 +80,7 @@ export interface IWalletInfo {
 export interface DAppPeerConnectParameters {
   dAppInfo: IDAppInfos;
   seed?: string;
+  discoverySeed?: string;
   announce?: Array<string>;
   loggingEnabled?: boolean;
   verifyConnection?: (
