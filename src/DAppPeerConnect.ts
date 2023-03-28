@@ -113,6 +113,7 @@ export default class DAppPeerConnect {
   constructor({
     dAppInfo,
     seed,
+    discoverySeed,
     announce,
     loggingEnabled,
     verifyConnection,
@@ -144,7 +145,7 @@ export default class DAppPeerConnect {
     if (useWalletDiscovery) {
       setTimeout(() => {
         //initialize discovery meerkat 1 second later
-        this.setUpDiscoveryMeerkcat();
+        this.setUpDiscoveryMeerkcat(discoverySeed);
       }, 1000);
     }
 
