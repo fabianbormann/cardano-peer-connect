@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.6](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.5...v1.2.6) (2023-03-28)
+
+
+### Features
+
+* Allow to set discovery seed ([963c771](https://github.com/fabianbormann/cardano-peer-connect/commit/963c771394f35ef61923a43f237aa6b2762c4265))
+
+
+### Bug Fixes
+
+* Add defaul trackers and remove hardcoded trackers for discovery ([b1f54de](https://github.com/fabianbormann/cardano-peer-connect/commit/b1f54de894201a142ffda2c6e776346a6b89585a))
+* add wallet information for autoconnect ([1315193](https://github.com/fabianbormann/cardano-peer-connect/commit/1315193fbd8c24db2d72f1d442db19cef2b9d59f))
+* Set correct parameter in verifyConnection ([aff0fc6](https://github.com/fabianbormann/cardano-peer-connect/commit/aff0fc6e8c970068a8d9960c5f72580d55c5eaaf))
+
 ## [1.2.5](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.4...v1.2.5) (2023-03-24)
 
 
