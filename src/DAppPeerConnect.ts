@@ -118,7 +118,6 @@ export default class DAppPeerConnect {
     onApiInject,
     useWalletDiscovery,
   }: DAppPeerConnectParameters) {
-    this.dAppInfo = dAppInfo;
 
     if (loggingEnabled) {
       this.enableLogging = loggingEnabled;
@@ -138,6 +137,11 @@ export default class DAppPeerConnect {
       announce: announce,
       loggingEnabled: loggingEnabled,
     }).setMaxListeners(20);
+
+    this.dAppInfo = {
+      ...dAppInfo,
+      address: this.meerkat.address()
+    };
 
     this.logger = new Logger({
       scope: 'DAppPeerConnect',

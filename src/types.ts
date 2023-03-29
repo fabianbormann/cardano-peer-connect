@@ -57,7 +57,7 @@ export type Cip30Api = {
 export interface IDAppInfos {
   name: string;
   url: string;
-  address?: string;
+  address: string;
 }
 
 export interface IConnectMessage {
@@ -78,7 +78,7 @@ export interface IWalletInfo {
 }
 
 export interface DAppPeerConnectParameters {
-  dAppInfo: IDAppInfos;
+  dAppInfo: Omit<IDAppInfos, 'address'>;
   seed?: string;
   discoverySeed?: string;
   announce?: Array<string>;
