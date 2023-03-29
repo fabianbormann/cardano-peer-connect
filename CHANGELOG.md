@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.7](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.6...v1.2.7) (2023-03-29)
+
+
+### Features
+
+* Address in IDAppinfos is now non optional ([aead5c1](https://github.com/fabianbormann/cardano-peer-connect/commit/aead5c1d3d94965062ae7ad75590ea3cca1ddc2f))
+
 ## [1.2.6](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.5...v1.2.6) (2023-03-28)
 
 
