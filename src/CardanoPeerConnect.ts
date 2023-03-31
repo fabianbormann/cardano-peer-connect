@@ -20,7 +20,7 @@ import AutoConnectHelper from './lib/AutoConnectHelper';
 import PeerConnectIdenticon from './lib/PeerConnectIdenticon';
 
 export default abstract class CardanoPeerConnect {
-  protected meerkats: Array<Meerkat> = [];
+  protected meerkats: Map<string, Meerkat> = new Map<string, Meerkat>();
   protected walletInfo: IWalletInfo;
   protected onConnect: (connectMessage: IConnectMessage) => void;
   protected onDisconnect: (connectMessage: IConnectMessage) => void;
@@ -134,11 +134,15 @@ export default abstract class CardanoPeerConnect {
       }
     );
 
-    this.meerkats.push(this.DAppDiscoveryMeerkat);
+    this.addMeerkat(this.DAppDiscoveryMeerkat.address(), this.DAppDiscoveryMeerkat);
   };
 
   public getDiscoveryMeerkatSeed = () : string | null => {
     return this.DAppDiscoveryMeerkat?.seed ?? null
+  }
+
+  public getDiscoveryMeerkatAddress = () : string | null => {
+    return this.DAppDiscoveryMeerkat?.address() ?? null
   }
 
   public setOnConnect = (
@@ -178,7 +182,7 @@ export default abstract class CardanoPeerConnect {
   }
 
   public getMeercat(identifier: string): Meerkat | undefined {
-    return this.meerkats.find((meerkat) => meerkat.identifier === identifier);
+    return this.meerkats.get(identifier);
   }
 
   public clearSeen = () => {
@@ -243,6 +247,7 @@ export default abstract class CardanoPeerConnect {
   };
 
   public connect(identifier: string): string {
+
     this.meerkat = new Meerkat({
       identifier: identifier,
       announce: this.announceEndpoints,
@@ -371,8 +376,29 @@ export default abstract class CardanoPeerConnect {
       );
     });
 
-    this.meerkats.push(this.meerkat);
+    this.addMeerkat(identifier, this.meerkat)
+
     return this.meerkat.seed;
+  }
+
+  protected addMeerkat = (identifier: string, meerkat: Meerkat) => {
+
+    if(this.meerkats.get(identifier)) {
+      try {
+
+        this.meerkats.get(identifier).close()
+      } catch (e: any) {
+        this.meerkat?.logger.warn("Error closing meerkat connection", e)
+      }
+      this.meerkats.delete(identifier)
+    }
+
+    this.meerkats.set(identifier, meerkat);
+  }
+
+  protected getMeerkat = (identifier: string): Meerkat | null => {
+
+    return this.meerkats.get(identifier) ?? null
   }
 
   public generateIdenticon = () => {
