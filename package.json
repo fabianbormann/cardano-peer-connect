@@ -20,6 +20,7 @@
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
+    "@babel/core": "^7.21.4",
     "@babel/preset-env": "^7.20.2",
     "@babel/preset-typescript": "^7.21.0",
     "@types/qrcode-svg": "^1.1.1",

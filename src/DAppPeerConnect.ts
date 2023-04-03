@@ -253,7 +253,10 @@ export default class DAppPeerConnect {
               connectWallet(true, true, walletInfo);
             } else {
               verifyConnection(
-                walletInfo,
+                {
+                  ...walletInfo,
+                  address: address,
+                },
                 connectWallet
               );
             }
