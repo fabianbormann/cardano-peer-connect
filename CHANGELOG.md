@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.8](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.7...v1.2.8) (2023-04-03)
+
+
+### Bug Fixes
+
+* Close old meerkat for same connection id ([2e57ff6](https://github.com/fabianbormann/cardano-peer-connect/commit/2e57ff65cb6736d7fd346b5ee361d8687a802972))
+
 ## [1.2.7](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.6...v1.2.7) (2023-03-29)
 
 
