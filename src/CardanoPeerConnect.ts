@@ -96,8 +96,7 @@ export default abstract class CardanoPeerConnect {
   protected setUpDiscoveryMeerkat = () => {
     this.DAppDiscoveryMeerkat = new Meerkat({
       announce: this.announceEndpoints,
-      seed:
-        this.discoverySeed ? this.discoverySeed : undefined,
+      seed: this.discoverySeed ? this.discoverySeed : undefined,
       loggingEnabled: true,
     }).setMaxListeners(20);
 
@@ -134,16 +133,19 @@ export default abstract class CardanoPeerConnect {
       }
     );
 
-    this.addMeerkat(this.DAppDiscoveryMeerkat.address(), this.DAppDiscoveryMeerkat);
+    this.addMeerkat(
+      this.DAppDiscoveryMeerkat.address(),
+      this.DAppDiscoveryMeerkat
+    );
   };
 
-  public getDiscoveryMeerkatSeed = () : string | null => {
-    return this.DAppDiscoveryMeerkat?.seed ?? null
-  }
+  public getDiscoveryMeerkatSeed = (): string | null => {
+    return this.DAppDiscoveryMeerkat?.seed ?? null;
+  };
 
-  public getDiscoveryMeerkatAddress = () : string | null => {
-    return this.DAppDiscoveryMeerkat?.address() ?? null
-  }
+  public getDiscoveryMeerkatAddress = (): string | null => {
+    return this.DAppDiscoveryMeerkat?.address() ?? null;
+  };
 
   public setOnConnect = (
     onConnectCallback: (connectMessage: IConnectMessage) => void
@@ -220,7 +222,7 @@ export default abstract class CardanoPeerConnect {
         experimentalApi: serializeTypeMapping(expApiTypeMapping),
         fullExperimentalApi: serializeTypeMapping(expFullApiTypeMapping),
       },
-      overwrite: overwrite
+      overwrite: overwrite,
     };
 
     this.meerkat.rpc(
@@ -234,8 +236,7 @@ export default abstract class CardanoPeerConnect {
 
         if (connectMessage.error) {
           this.meerkat.logger.warn(
-            'Api could note be injected. Error: ' +
-            connectMessage.errorMessage
+            'Api could note be injected. Error: ' + connectMessage.errorMessage
               ? connectMessage.errorMessage
               : 'unknown error.'
           );
@@ -247,7 +248,6 @@ export default abstract class CardanoPeerConnect {
   };
 
   public connect(identifier: string): string {
-
     this.meerkat = new Meerkat({
       identifier: identifier,
       announce: this.announceEndpoints,
@@ -376,30 +376,28 @@ export default abstract class CardanoPeerConnect {
       );
     });
 
-    this.addMeerkat(identifier, this.meerkat)
+    this.addMeerkat(identifier, this.meerkat);
 
     return this.meerkat.seed;
   }
 
   protected addMeerkat = (identifier: string, meerkat: Meerkat) => {
-
-    if(this.meerkats.get(identifier)) {
+    const meerkatInstance = this.meerkats.get(identifier);
+    if (meerkatInstance) {
       try {
-
-        this.meerkats.get(identifier).close()
+        meerkatInstance.close();
       } catch (e: any) {
-        this.meerkat?.logger.warn("Error closing meerkat connection", e)
+        this.meerkat?.logger.warn('Error closing meerkat connection', e);
       }
-      this.meerkats.delete(identifier)
+      this.meerkats.delete(identifier);
     }
 
     this.meerkats.set(identifier, meerkat);
-  }
+  };
 
   protected getMeerkat = (identifier: string): Meerkat | null => {
-
-    return this.meerkats.get(identifier) ?? null
-  }
+    return this.meerkats.get(identifier) ?? null;
+  };
 
   public generateIdenticon = () => {
     if (!this.meerkat?.address()) {
