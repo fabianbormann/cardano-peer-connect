@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.10](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.9...v1.2.10) (2023-04-06)
+
+
+### Bug Fixes
+
+* check meerkat instance for undefined ([1d25f65](https://github.com/fabianbormann/cardano-peer-connect/commit/1d25f65fd0af7482cdaacbc3ae3c78699999659c))
+
 ## [1.2.9](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.8...v1.2.9) (2023-04-06)
 
 
