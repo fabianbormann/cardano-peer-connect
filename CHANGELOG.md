@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.9](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.8...v1.2.9) (2023-04-06)
+
+
+### Bug Fixes
+
+* restore sync between package.json and lock file to make npm ci work again ([4adf3f4](https://github.com/fabianbormann/cardano-peer-connect/commit/4adf3f419709fe21a46860733824404f38390cfa))
+
 ## [1.2.8](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.7...v1.2.8) (2023-04-03)
 
 
