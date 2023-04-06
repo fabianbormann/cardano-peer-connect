@@ -19,7 +19,7 @@ npm i @fabianbormann/cardano-peer-connect
 
 ### Infos for usage in the wallet
 
-Extend the base CardanoPeerConnect class for your wallet.
+Extend the base CardanoPeerConnect class for your wallet:
 
 ```js
 class BoostPeerConnect extends CardanoPeerConnect {
