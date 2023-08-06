@@ -1,0 +1,54 @@
+name: Upload cardano-peer-connect Bundle to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+jobs:
+  upload-cardano-peer-connect-to-gh-pages:
+    if: "contains(github.event.head_commit.message, 'release-please--branches--main')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v3
+
+      - name: 🫡 Setup node
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18.12.0
+
+      - name: 🧘‍♀️ Download dependencies
+        run: npm ci
+
+      - name: 📦 Build the cardano-peer-connect bundle
+        run: npm run build
+
+      - name: 👀 Lookup version
+        run: |
+          echo "VERSION=$(sed -n 's/.*\"version\": *\"\([^\"]*\)\".*/\1/p' package.json)" >> $GITHUB_ENV
+
+      - name: 🎨 Create version folder
+        run: mkdir -p ${{ env.VERSION }}
+
+      - name: 💃🏻 Move files into the version folder
+        run: |
+          mv dist/index.js ${{ env.VERSION }}/index.js
+          mv dist/index.js.map ${{ env.VERSION }}/index.js.map
+          mv dist/index.js.LICENSE.txt ${{ env.VERSION }}/index.js.LICENSE.txt
+
+      - name: 📅 Publish latest version on gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          BRANCH: gh-pages
+          folder: ${{ env.VERSION }}
+          target-folder: latest/
+
+      - name: 🥁 Publish explicit version on gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          BRANCH: gh-pages
+          folder: ${{ env.VERSION }}
+          target-folder: ${{ env.VERSION }}/

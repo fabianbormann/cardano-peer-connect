@@ -6,10 +6,9 @@
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "bundle": "npm run build && cp dist/index.js bundle.min.js",
     "build": "webpack && tsc --emitDeclarationOnly",
     "cy:run": "cypress run",
-    "test": "npm run bundle && cypress run"
+    "test": "npm run build && cypress run"
   },
   "keywords": [
     "WebRTC",
