@@ -3,6 +3,8 @@
 <p align="left">
 <img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/fabianbormann/cardano-peer-connect/test.yml?label=Tests&style=for-the-badge" />
 <img alt="Release" src="https://img.shields.io/github/actions/workflow/status/fabianbormann/cardano-peer-connect/release.yml?label=Release&style=for-the-badge" />
+<img alt="Bundle" src="https://img.shields.io/github/actions/workflow/status/fabianbormann/cardano-peer-connect/bundle.yml?label=Bundle&style=for-the-badge" />
+<img alt="Publish" src="https://img.shields.io/github/actions/workflow/status/fabianbormann/cardano-peer-connect/publish.yml?label=Publish&style=for-the-badge" />
 <a href="https://conventionalcommits.org"><img alt="conventionalcommits" src="https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&style=for-the-badge" /></a>
 </p>
 
