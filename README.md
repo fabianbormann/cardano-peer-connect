@@ -113,7 +113,7 @@ const seed = peerConnect.value.connect(
 This is the necessary minimal implementation a DApp provider has to do, to get his app connected to peer connect.
 
 ```html
-<script src="https://fabianbormann.github.io/cardano-peer-connect/bundle.min.js"></script>
+<script src="https://fabianbormann.github.io/cardano-peer-connect/latest/index.js"></script>
 <script>
 
   // Give your app some basic information that will be displayed to the client wallet when he is connecting to your DApp.
