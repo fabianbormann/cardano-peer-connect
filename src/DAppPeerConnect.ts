@@ -32,7 +32,10 @@ export default class DAppPeerConnect {
   protected onApiEject?: (name: string, address: string) => void;
   protected onApiInject?: (name: string, address: string) => void;
 
-  protected setUpDiscoveryMeerkcat = (announce: Array<string>, address?: string) => {
+  protected setUpDiscoveryMeerkcat = (
+    announce: Array<string>,
+    address?: string
+  ) => {
     if (address || AutoConnectHelper.getWalletDiscoveryAddress()) {
       this.meerkat.logger.debug(
         'DApp: create discovery with address',
@@ -118,18 +121,18 @@ export default class DAppPeerConnect {
     onApiInject,
     useWalletDiscovery,
   }: DAppPeerConnectParameters) {
-
     if (loggingEnabled) {
       this.enableLogging = loggingEnabled;
     }
 
-    if(!announce) {
+    if (!announce) {
       announce = [
-        'https://pro.passwordchaos.gimbalabs.io',
         'wss://tracker.files.fm:7073/announce',
-        'wss://tracker.btorrent.xyz',
-        'wss://tracker.openwebtorrent.com:443/announce',
-      ]
+        'wss://tracker.files.fm:7073/announce',
+        'ws://tracker.files.fm:7072/announce',
+        'udp://tracker.opentrackr.org:1337/announce',
+        'http://tracker.openbittorrent.com:80/announce',
+      ];
     }
 
     this.meerkat = new Meerkat({
@@ -140,7 +143,7 @@ export default class DAppPeerConnect {
 
     this.dAppInfo = {
       ...dAppInfo,
-      address: this.meerkat.address()
+      address: this.meerkat.address(),
     };
 
     this.logger = new Logger({
@@ -371,7 +374,7 @@ export default class DAppPeerConnect {
       'api',
       (
         address: string,
-        args: { api: PeerConnectApi, overwrite?: boolean },
+        args: { api: PeerConnectApi; overwrite?: boolean },
         callback: (args: IConnectMessage) => void
       ) => {
         if (address !== this.connectedWallet) {
@@ -460,7 +463,7 @@ export default class DAppPeerConnect {
         callback({
           dApp: this.dAppInfo,
           connected: true,
-          error: false
+          error: false,
         });
 
         if (onApiInject) {
