@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.11](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.10...v1.2.11) (2023-08-06)
+
+
+### Features
+
+* add gh pages deployment to track the version of future artifacs on a reachable place ([a170147](https://github.com/fabianbormann/cardano-peer-connect/commit/a170147158518d6b600509c988fbbee8ee02fece))
+
+
+### Bug Fixes
+
+* update dependencies to their latest versions ([5252325](https://github.com/fabianbormann/cardano-peer-connect/commit/5252325d83bfb483fcf331769140b82bade71c2d))
+
 ## [1.2.10](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.9...v1.2.10) (2023-04-06)
 
 
