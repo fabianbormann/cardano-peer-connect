@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.12](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.11...v1.2.12) (2023-08-06)
+
+
+### Bug Fixes
+
+* update meerkat version to solve non-base58 character error, update tracker array ([a37fb53](https://github.com/fabianbormann/cardano-peer-connect/commit/a37fb53a9e5cb7761d930d8f28f21242d8440be0))
+
 ## [1.2.11](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.10...v1.2.11) (2023-08-06)
 
 
