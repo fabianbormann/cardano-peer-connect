@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.13](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.12...v1.2.13) (2023-08-07)
+
+
+### Bug Fixes
+
+* update tracker list to wss and ws only items ([281724b](https://github.com/fabianbormann/cardano-peer-connect/commit/281724b88d093dc9e82181cfdf09128d193a57ce))
+
 ## [1.2.12](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.11...v1.2.12) (2023-08-06)
 
 
