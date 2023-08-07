@@ -32,7 +32,7 @@
   },
   "dependencies": {
     "@basementuniverse/marble-identicons": "^0.1.2",
-    "@fabianbormann/meerkat": "^1.0.14",
+    "@fabianbormann/meerkat": "^1.0.15",
     "qrcode-svg": "^1.1.0"
   }
 }
