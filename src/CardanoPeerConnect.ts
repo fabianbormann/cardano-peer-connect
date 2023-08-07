@@ -66,9 +66,9 @@ export default abstract class CardanoPeerConnect {
     this.seed = args.seed ?? null;
     this.discoverySeed = args.discoverySeed ?? null;
     this.announceEndpoints = args.announce ?? [
-      'https://pro.passwordchaos.gimbalabs.io',
+      'wss://tracker.openwebtorrent.com',
+      'wss://dev.tracker.cf-identity-wallet.metadata.dev.cf-deployments.org',
       'wss://tracker.files.fm:7073/announce',
-      'wss://tracker.btorrent.xyz',
       'ws://tracker.files.fm:7072/announce',
       'wss://tracker.openwebtorrent.com:443/announce',
     ];

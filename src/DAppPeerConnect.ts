@@ -127,11 +127,11 @@ export default class DAppPeerConnect {
 
     if (!announce) {
       announce = [
-        'wss://tracker.files.fm:7073/announce',
+        'wss://tracker.openwebtorrent.com',
+        'wss://dev.tracker.cf-identity-wallet.metadata.dev.cf-deployments.org',
         'wss://tracker.files.fm:7073/announce',
         'ws://tracker.files.fm:7072/announce',
-        'udp://tracker.opentrackr.org:1337/announce',
-        'http://tracker.openbittorrent.com:80/announce',
+        'wss://tracker.openwebtorrent.com:443/announce',
       ];
     }
 
