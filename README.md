@@ -59,7 +59,7 @@ import {
   CardanoPeerConnect,
   DAppPeerConnect,
 } from '@fabianbormann/cardano-peer-connect';
-import { IConnectMessage } from '@fabianbormann/cardano-peer-connect/types';
+import { IConnectMessage } from '@fabianbormann/cardano-peer-connect/dist/src/types';
 
 // the id the dapp is showing you.
 const dAppIdentifier = 'bYUh6Bn6A........388LR1JCrED';
