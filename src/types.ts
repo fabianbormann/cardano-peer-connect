@@ -33,6 +33,17 @@ export type Cip30DataSignature = {
   signature: CoseSign1CborHex;
 };
 
+export type deviceType = 'mobile' | 'desktop'
+export type mobileOsType = 'ios' | 'android'
+export type appType = 'browser' | 'pwa' | 'native'
+
+export type osInfo = {
+  deviceType: deviceType,
+  mobileOsType?: mobileOsType,
+  mobileType?: appType,
+  url?: String
+}
+
 export type PeerConnectApi = {
   apiVersion: string;
   name: string;
@@ -75,6 +86,7 @@ export interface IWalletInfo {
   version: string;
   icon: string;
   requestAutoconnect?: boolean;
+  osInfo?: osInfo
 }
 
 export interface DAppPeerConnectParameters {
