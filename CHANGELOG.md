@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.14](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.13...v1.2.14) (2023-11-15)
+
+
+### Features
+
+* Add more info on wallet platform ([b4a27be](https://github.com/fabianbormann/cardano-peer-connect/commit/b4a27be783327c73dd186d6c69fb071c134dad58))
+
 ## [1.2.13](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.12...v1.2.13) (2023-08-07)
 
 
