@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.15](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.14...v1.2.15) (2024-03-12)
+
+
+### Bug Fixes
+
+* bump versions of dependencies to prevent valnerabilities ([ff230f4](https://github.com/fabianbormann/cardano-peer-connect/commit/ff230f4127ec7f0b2a30682633db207f688cacbf))
+
 ## [1.2.14](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.13...v1.2.14) (2023-11-15)
 
 
