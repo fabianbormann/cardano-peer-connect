@@ -201,7 +201,13 @@ export const buildApiCalls = (
         params = params ?? [];
 
         return new Promise((resolve, reject) => {
-          meerkat.rpc(address, endpoint, [method, ...params], (result: any) => resolve(result));
+          meerkat.rpc(address, endpoint, [method, ...params], (result: any) => {
+            if (result.error) {
+              reject(result.error)
+            } else {
+              resolve(result)
+            }
+          });
         });
       };
     } else {
