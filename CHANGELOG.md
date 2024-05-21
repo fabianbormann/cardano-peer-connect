@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.16](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.15...v1.2.16) (2024-05-21)
+
+
+### Features
+
+* reject error so the DApp can throw it ([a31a9f0](https://github.com/fabianbormann/cardano-peer-connect/commit/a31a9f091ae4f3c6f969472464b2e631257b2c3d))
+
 ## [1.2.15](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.14...v1.2.15) (2024-03-12)
 
 
