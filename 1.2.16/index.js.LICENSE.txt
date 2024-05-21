@@ -1,0 +1,17 @@
+/*! @basementuniverse/commonjs */
+
+/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/facebook/regenerator/blob/main/LICENSE */
+
+/*! seed-random */
+
+/*!**********************!*\
+  !*** ./src/index.ts ***!
+  \**********************/
+
+/*!*******************************************!*\
+  !*** ./node_modules/seed-random/index.js ***!
+  \*******************************************/
+
+/*!***********************************************************!*\
+  !*** ./node_modules/@basementuniverse/commonjs/common.js ***!
+  \***********************************************************/
