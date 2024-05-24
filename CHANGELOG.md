@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.17](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.16...v1.2.17) (2024-05-24)
+
+
+### Features
+
+* icon field for the IDAppInfos interface ([d1ed880](https://github.com/fabianbormann/cardano-peer-connect/commit/d1ed8807b3d1f22559db1450f5f5c15e75eb7726))
+
 ## [1.2.16](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.15...v1.2.16) (2024-05-21)
 
 
