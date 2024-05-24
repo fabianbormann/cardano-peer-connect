@@ -69,6 +69,7 @@ export interface IDAppInfos {
   name: string;
   url: string;
   address: string;
+  icon?: string;
 }
 
 export interface IConnectMessage {
