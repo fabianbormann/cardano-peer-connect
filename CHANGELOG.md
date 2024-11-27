@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.18](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.17...v1.2.18) (2024-11-27)
+
+
+### Features
+
+* use dynamic imports to prevent meerkat from throwing errors in a non browser environment ([73d5217](https://github.com/fabianbormann/cardano-peer-connect/commit/73d521708db6b902520cdd7d0ed0d7d53fcc73a6))
+
 ## [1.2.17](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.16...v1.2.17) (2024-05-24)
 
 
