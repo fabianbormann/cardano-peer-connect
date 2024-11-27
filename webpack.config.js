@@ -11,6 +11,7 @@ const config = {
     library: 'CardanoPeerConnect',
     libraryTarget: 'umd',
     globalObject: 'this',
+    publicPath: '/dist/',
   },
   devtool: 'source-map',
   module: {
@@ -41,6 +42,10 @@ const config = {
     new CleanWebpackPlugin({
       verbose: true,
       cleanStaleWebpackAssets: true,
+    }),
+    new webpack.DefinePlugin({
+      global: 'globalThis',
+      self: 'globalThis',
     }),
   ],
 };
