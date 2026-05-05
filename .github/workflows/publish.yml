@@ -23,7 +23,7 @@ jobs:
           node-version: '22.14.0'
           registry-url: https://registry.npmjs.org
           cache: 'npm'
-          cache-dependency-path: typescript/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: ⬆️ Ensure npm supports Trusted Publishing
         run: npm i -g npm@^11.5.1
@@ -35,7 +35,6 @@ jobs:
         run: npm run build
 
       - name: 🚀 Publish to npm (OIDC only)
-        working-directory: ./typescript
         env:
           NPM_CONFIG_USERCONFIG: /dev/null
         run: |
