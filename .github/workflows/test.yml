@@ -22,5 +22,8 @@ jobs:
       - name: 🧘‍♀️ Download dependencies
         run: npm ci
 
+      - name: 🎭 Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
       - name: 🎳 Run tests
         run: npm test
