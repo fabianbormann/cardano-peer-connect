@@ -1,4 +1,5 @@
 import { Value } from './lib/ExperimentalContainer';
+import type { PeerOptions } from 'peerjs';
 
 export type Cip30Function =
   | 'getNetworkId'
@@ -49,8 +50,8 @@ export type PeerConnectApi = {
   name: string;
   icon: string;
   methods: Array<Cip30Function>;
-  experimentalApi: string; // This is a serialized TypeMapping
-  fullExperimentalApi: string; // This is a serialized TypeMapping
+  experimentalApi: string;
+  fullExperimentalApi: string;
 };
 
 export type Cip30Api = {
@@ -92,9 +93,7 @@ export interface IWalletInfo {
 
 export interface DAppPeerConnectParameters {
   dAppInfo: Omit<IDAppInfos, 'address'>;
-  seed?: string;
-  discoverySeed?: string;
-  announce?: Array<string>;
+  walletDiscoveryPeerId?: string;
   loggingEnabled?: boolean;
   verifyConnection?: (
     walletInfo: IWalletInfo,
@@ -105,4 +104,5 @@ export interface DAppPeerConnectParameters {
   onApiEject?: (name: string, address: string) => void;
   onApiInject?: (name: string, address: string) => void;
   useWalletDiscovery?: boolean;
+  peerJsConfig?: PeerOptions;
 }

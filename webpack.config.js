@@ -35,6 +35,9 @@ const config = {
     extensions: ['.js', '.ts'],
     fallback: {
       fs: false,
+      path: false,
+      os: false,
+      crypto: false,
     },
   },
   plugins: [

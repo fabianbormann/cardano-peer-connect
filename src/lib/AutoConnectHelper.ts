@@ -1,28 +1,18 @@
 export default class AutoConnectHelper {
-  private static storageKey = 'cardano-peer-autoconnect-id';
-  private static discoveryStorageKey = 'cardano-peer-discovery-id';
-  private static walletDiscoveryStorageKey = 'cardano-wallet-discovery-address';
+  private static autoConnectKey = 'cardano-peer-autoconnect-id';
+  private static discoveryPeerIdKey = 'cardano-peer-discovery-id';
+  private static walletDiscoveryPeerIdKey = 'cardano-wallet-discovery-address';
 
   public static addAutoConnectId = (id: string): void => {
-    let autoConnectIds = [];
+    if (this.isAutoConnectId(id)) return;
 
-    const ids = localStorage.getItem(this.storageKey);
-
-    if (ids !== null) {
-      autoConnectIds = JSON.parse(ids);
-    }
-
-    if (this.isAutoConnectId(id)) {
-      return;
-    }
-
-    autoConnectIds.push(id);
-
-    localStorage.setItem(this.storageKey, JSON.stringify(autoConnectIds));
+    const ids = this.getAutoConnectIds();
+    ids.push(id);
+    localStorage.setItem(this.autoConnectKey, JSON.stringify(ids));
   };
 
   public static getAutoConnectIds = (): string[] => {
-    return JSON.parse(localStorage.getItem(this.storageKey) ?? '[]');
+    return JSON.parse(localStorage.getItem(this.autoConnectKey) ?? '[]');
   };
 
   public static isAutoConnectId = (id: string): boolean => {
@@ -30,40 +20,27 @@ export default class AutoConnectHelper {
   };
 
   public static resetAutoConnectIds = (): void => {
-    localStorage.setItem(this.storageKey, JSON.stringify([]));
+    localStorage.setItem(this.autoConnectKey, JSON.stringify([]));
   };
 
   public static removeAutoConnectId = (id: string): void => {
-    let autoConnectIds = [];
-    const ids = localStorage.getItem(this.storageKey);
-
-    if (ids !== null) {
-      autoConnectIds = JSON.parse(ids);
-    }
-
-    const index = autoConnectIds.indexOf(id);
-
+    const ids = this.getAutoConnectIds();
+    const index = ids.indexOf(id);
     if (index !== -1) {
-      autoConnectIds = autoConnectIds.splice(index, 1);
-
-      localStorage.setItem(this.storageKey, JSON.stringify(autoConnectIds));
-      return;
+      ids.splice(index, 1);
+      localStorage.setItem(this.autoConnectKey, JSON.stringify(ids));
     }
   };
 
-  public static saveWalletAutoDiscoverySeed = (id: string): void => {
-    localStorage.setItem(this.discoveryStorageKey, id);
+  public static saveDiscoveryPeerId = (id: string): void => {
+    localStorage.setItem(this.discoveryPeerIdKey, id);
   };
 
-  public static getWalletAutoDiscoverySeed = (): string | null => {
-    return localStorage.getItem(this.discoveryStorageKey);
+  public static saveWalletDiscoveryPeerId = (id: string): void => {
+    localStorage.setItem(this.walletDiscoveryPeerIdKey, id);
   };
 
-  public static saveWalletDiscoveryAddress = (id: string): void => {
-    localStorage.setItem(this.walletDiscoveryStorageKey, id);
-  };
-
-  public static getWalletDiscoveryAddress = (): string | null => {
-    return localStorage.getItem(this.walletDiscoveryStorageKey);
+  public static getWalletDiscoveryPeerId = (): string | null => {
+    return localStorage.getItem(this.walletDiscoveryPeerIdKey);
   };
 }
