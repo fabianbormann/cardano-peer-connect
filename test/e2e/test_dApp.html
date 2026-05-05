@@ -7,31 +7,164 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="../../dist/index.js"></script>
     <title>Test dApp</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        h2 { margin-top: 2rem; border-top: 1px solid #ddd; padding-top: 1rem; }
+        label { display: block; margin-top: 0.8rem; font-weight: bold; }
+        input[type="text"] { width: 100%; box-sizing: border-box; padding: 6px 8px; margin-top: 4px; font-family: monospace; }
+        button { margin-top: 8px; padding: 6px 14px; cursor: pointer; }
+        button:disabled { opacity: 0.4; cursor: default; }
+        #connection-status { font-weight: bold; }
+        #connection-status.connected { color: green; }
+        #connection-status.disconnected { color: red; }
+        .result-box { margin-top: 0.8rem; background: #f5f5f5; border: 1px solid #ddd; padding: 0.6rem; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 0.85rem; }
+        .result-box dt { font-weight: bold; color: #555; margin-top: 0.4rem; }
+        .result-box dt:first-child { margin-top: 0; }
+        .qr-row { display: flex; align-items: flex-start; gap: 1rem; flex-wrap: wrap; }
+    </style>
 </head>
 
 <body>
     <h1>Test dApp</h1>
-    <p>Please scan the QR code or share the address below with your wallet app.</p>
-    <div id="qr-code"></div>
-    <p id="address"></p><button id="button" onclick="copyAddress()">Copy</button>
+
+    <div class="qr-row">
+        <div id="qr-code"></div>
+        <div>
+            <p style="margin:0 0 4px">Peer ID (share with wallet):</p>
+            <p id="address" style="font-family:monospace;margin:0"></p>
+            <button id="button" onclick="copyAddress()">Copy</button>
+        </div>
+    </div>
+
+    <p>Status: <span id="connection-status" class="disconnected">Disconnected</span></p>
+    <p>API: <span id="api-status">No API</span>&nbsp;&nbsp;Wallet: <span id="wallet-address" style="font-family:monospace"></span></p>
+
+    <!-- ── Get Network ID ─────────────────────────────────────── -->
+    <h2>Get Network ID</h2>
+    <button id="btn-get-network-id" disabled>Get Network ID</button>
+    <div id="network-id-result" class="result-box" style="display:none">
+        <dt>Network ID</dt>
+        <dd id="network-id"></dd>
+    </div>
+
+    <!-- ── Sign Data ──────────────────────────────────────────── -->
+    <h2>Sign Data</h2>
+    <label for="sign-addr">Address</label>
+    <input type="text" id="sign-addr" value="addr_test1qpfake000000000000000000000000000000000000000000" />
+    <label for="sign-message">Message (plain text)</label>
+    <input type="text" id="sign-message" placeholder="Hello, Cardano!" value="Hello, Cardano!" />
+    <button id="btn-sign-data" disabled>Sign Data</button>
+    <div id="sign-result" class="result-box" style="display:none">
+        <dt>Payload sent (hex)</dt>
+        <dd id="sign-payload-hex"></dd>
+        <dt>Signature (hex)</dt>
+        <dd id="sign-signature"></dd>
+        <dt>Key (hex)</dt>
+        <dd id="sign-key"></dd>
+        <dt>Signature decoded</dt>
+        <dd id="sign-decoded"></dd>
+    </div>
+
     <script>
-        const dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
+        var injectedApi = null;
+
+        function textToHex(text) {
+            return Array.from(new TextEncoder().encode(text))
+                .map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
+
+        function hexToText(hex) {
+            try {
+                var bytes = hex.match(/.{1,2}/g).map(function(b) { return parseInt(b, 16); });
+                return new TextDecoder().decode(new Uint8Array(bytes));
+            } catch(e) { return '(decode error)'; }
+        }
+
+        function setActionsEnabled(enabled) {
+            document.getElementById('btn-get-network-id').disabled = !enabled;
+            document.getElementById('btn-sign-data').disabled = !enabled;
+        }
+
+        var dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
             dAppInfo: {
                 name: 'dAppConnectTest',
                 url: 'localhost'
             },
-            seed: 'BofdLENCoCxJroaUcjbj9gyhiozjR6o6ZnxgMD6TgtvpS6DbGsWi'
+            peerJsConfig: {
+                host: 'localhost',
+                port: 9000,
+                path: '/',
+                secure: false
+            },
+            onConnect: function(address, walletInfo) {
+                document.getElementById('connection-status').innerText = 'Connected';
+                document.getElementById('connection-status').className = 'connected';
+                document.getElementById('wallet-address').innerText = address;
+            },
+            onDisconnect: function(address) {
+                document.getElementById('connection-status').innerText = 'Disconnected';
+                document.getElementById('connection-status').className = 'disconnected';
+                document.getElementById('api-status').innerText = 'No API';
+                document.getElementById('wallet-address').innerText = '';
+                setActionsEnabled(false);
+                injectedApi = null;
+            },
+            onApiInject: function(name, address) {
+                document.getElementById('api-status').innerText = 'API Injected';
+                injectedApi = window.cardano[name.toLowerCase()];
+                setActionsEnabled(true);
+            }
         });
+
         dAppConnect.generateQRCode(document.getElementById('qr-code'));
         document.getElementById('address').innerText = dAppConnect.getAddress();
 
-        function copyAddress(clickElement) {
-            const text = document.getElementById('address').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                document.getElementById("button").innerText = "Successfully copied!";
-                setTimeout(() => {
-                    document.getElementById("button").innerText = "Copy";
-                }, 500);
+        // ── Get Network ID ──────────────────────────────────────
+        document.getElementById('btn-get-network-id').addEventListener('click', function() {
+            if (!injectedApi) return;
+            injectedApi.enable().then(function(api) {
+                return api.getNetworkId();
+            }).then(function(networkId) {
+                document.getElementById('network-id').innerText = String(networkId);
+                document.getElementById('network-id-result').style.display = 'block';
+            }).catch(function(e) {
+                document.getElementById('network-id').innerText = 'Error: ' + e.message;
+                document.getElementById('network-id-result').style.display = 'block';
+            });
+        });
+
+        // ── Sign Data ───────────────────────────────────────────
+        document.getElementById('btn-sign-data').addEventListener('click', function() {
+            if (!injectedApi) return;
+            var addr = document.getElementById('sign-addr').value.trim();
+            var message = document.getElementById('sign-message').value;
+            var payloadHex = textToHex(message);
+
+            document.getElementById('sign-payload-hex').innerText = payloadHex;
+            document.getElementById('sign-result').style.display = 'none';
+
+            injectedApi.enable().then(function(api) {
+                return api.signData(addr, payloadHex);
+            }).then(function(result) {
+                document.getElementById('sign-signature').innerText = result.signature;
+                document.getElementById('sign-key').innerText = result.key;
+                document.getElementById('sign-decoded').innerText = hexToText(result.signature);
+                document.getElementById('sign-result').style.display = 'block';
+            }).catch(function(e) {
+                document.getElementById('sign-signature').innerText = 'Error: ' + e.message;
+                document.getElementById('sign-key').innerText = '';
+                document.getElementById('sign-decoded').innerText = '';
+                document.getElementById('sign-result').style.display = 'block';
+            });
+        });
+
+        function copyAddress() {
+            var text = document.getElementById('address').innerText;
+            navigator.clipboard.writeText(text).then(function() {
+                document.getElementById('button').innerText = 'Copied!';
+                setTimeout(function() {
+                    document.getElementById('button').innerText = 'Copy';
+                }, 1000);
             });
         }
     </script>

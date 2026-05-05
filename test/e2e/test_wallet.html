@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../../dist/index.js"></script>
+    <title>Test Wallet</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; }
+        label { display: block; margin-top: 1rem; font-weight: bold; }
+        input[type="text"] { width: 100%; box-sizing: border-box; padding: 6px 8px; margin-top: 4px; font-family: monospace; }
+        button { margin-top: 8px; padding: 6px 14px; cursor: pointer; }
+        #connection-status { font-weight: bold; }
+        #connection-status.connected { color: green; }
+        #connection-status.disconnected { color: red; }
+        .log { margin-top: 1.5rem; }
+        .log ul { list-style: none; padding: 0; font-family: monospace; font-size: 0.85rem; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 6px; }
+        .log li { padding: 2px 0; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+
+<body>
+    <h1>Test Wallet</h1>
+
+    <p>Status: <span id="connection-status" class="disconnected">Disconnected</span></p>
+    <p>DApp address: <span id="dapp-address" style="font-family:monospace"></span></p>
+
+    <label for="dapp-id-input">DApp peer ID</label>
+    <input type="text" id="dapp-id-input" placeholder="dapp-xxxxxxxx-xxxxxxxxx" />
+    <button id="btn-connect">Connect</button>
+    <button id="btn-disconnect" disabled>Disconnect</button>
+
+    <div class="log">
+        <strong>Log</strong>
+        <ul id="log-list"></ul>
+    </div>
+
+    <script>
+        function log(msg) {
+            var li = document.createElement('li');
+            li.innerText = new Date().toLocaleTimeString() + '  ' + msg;
+            var list = document.getElementById('log-list');
+            list.insertBefore(li, list.firstChild);
+        }
+
+        function textToHex(text) {
+            return Array.from(new TextEncoder().encode(text))
+                .map(function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+        }
+
+        function hexToText(hex) {
+            try {
+                var bytes = hex.match(/.{1,2}/g).map(function(b) { return parseInt(b, 16); });
+                return new TextDecoder().decode(new Uint8Array(bytes));
+            } catch(e) { return '(decode error)'; }
+        }
+
+        class MockWallet extends CardanoPeerConnect.CardanoPeerConnect {
+            constructor(params) {
+                super(
+                    {
+                        name: 'p2p-test-wallet',
+                        version: '1.0.0',
+                        icon: '',
+                        requestAutoconnect: false
+                    },
+                    params
+                );
+            }
+
+            getNetworkId() { log('getNetworkId() → 1'); return Promise.resolve(1); }
+            getUtxos() { log('getUtxos() → []'); return Promise.resolve([]); }
+            getCollateral() { log('getCollateral() → []'); return Promise.resolve([]); }
+            getBalance() { log('getBalance() → 0'); return Promise.resolve('0'); }
+            getUsedAddresses() { log('getUsedAddresses() → []'); return Promise.resolve([]); }
+            getUnusedAddresses() { log('getUnusedAddresses() → []'); return Promise.resolve([]); }
+            getChangeAddress() { log('getChangeAddress() → addr_test1mock'); return Promise.resolve('addr_test1mock'); }
+            getRewardAddresses() { log('getRewardAddresses() → []'); return Promise.resolve([]); }
+            signTx(tx) { log('signTx()'); return Promise.resolve(tx); }
+
+            signData(addr, payload) {
+                var message = hexToText(payload);
+                log('signData(addr=' + addr.slice(0, 24) + '…, msg="' + message + '")');
+                // Fake signature encodes what was signed so the DApp can decode and verify the roundtrip
+                var sigText = 'FAKE-SIG[addr=' + addr + ', msg=' + message + ']';
+                var signature = textToHex(sigText);
+                var key = textToHex('FAKE-KEY:p2p-test-wallet');
+                return Promise.resolve({ signature: signature, key: key });
+            }
+
+            submitTx(tx) { log('submitTx()'); return Promise.resolve(tx); }
+        }
+
+        var wallet = new MockWallet({
+            peerJsConfig: {
+                host: 'localhost',
+                port: 9000,
+                path: '/',
+                secure: false
+            }
+        });
+
+        wallet.setOnConnect(function(connectMessage) {
+            if (connectMessage.connected) {
+                document.getElementById('connection-status').innerText = 'Connected';
+                document.getElementById('connection-status').className = 'connected';
+                document.getElementById('dapp-address').innerText = connectMessage.dApp.address;
+                document.getElementById('btn-connect').disabled = true;
+                document.getElementById('btn-disconnect').disabled = false;
+                log('Connected to ' + connectMessage.dApp.address);
+            }
+        });
+
+        wallet.setOnDisconnect(function() {
+            document.getElementById('connection-status').innerText = 'Disconnected';
+            document.getElementById('connection-status').className = 'disconnected';
+            document.getElementById('dapp-address').innerText = '';
+            document.getElementById('btn-connect').disabled = false;
+            document.getElementById('btn-disconnect').disabled = true;
+            log('Disconnected');
+        });
+
+        document.getElementById('btn-connect').addEventListener('click', function() {
+            var dappId = document.getElementById('dapp-id-input').value.trim();
+            if (!dappId) { log('Enter a DApp peer ID first'); return; }
+            log('Connecting to ' + dappId + '...');
+            wallet.connect(dappId);
+        });
+
+        document.getElementById('btn-disconnect').addEventListener('click', function() {
+            try {
+                wallet.disconnect('');
+            } catch(e) {
+                log('Disconnect error: ' + e.message);
+            }
+        });
+
+        // Auto-connect if peer ID was injected via Playwright (test-dapp-peer-id in localStorage)
+        var autoId = localStorage.getItem('test-dapp-peer-id');
+        if (autoId) {
+            document.getElementById('dapp-id-input').value = autoId;
+            log('Auto-connecting to ' + autoId + '...');
+            wallet.connect(autoId);
+        } else {
+            log('Ready — enter a DApp peer ID and click Connect');
+        }
+    </script>
+</body>
+
+</html>

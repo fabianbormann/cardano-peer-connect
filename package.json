@@ -7,8 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "webpack && tsc --emitDeclarationOnly",
-    "cy:run": "cypress run",
-    "test": "npm run build && cypress run"
+    "test": "npm run build && playwright test",
+    "test:ui": "playwright test --ui"
   },
   "keywords": [
     "WebRTC",
@@ -19,20 +19,22 @@
   "author": "",
   "license": "Apache-2.0",
   "devDependencies": {
-    "@babel/core": "^7.26.0",
-    "@babel/preset-env": "^7.26.0",
-    "@babel/preset-typescript": "^7.26.0",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.3",
+    "@babel/preset-typescript": "^7.28.5",
+    "@playwright/test": "^1.59.1",
     "@types/qrcode-svg": "^1.1.5",
-    "babel-loader": "^9.2.1",
+    "babel-loader": "^10.1.1",
     "clean-webpack-plugin": "^4.0.0",
-    "cypress": "^13.16.0",
-    "typescript": "^5.7.2",
-    "webpack": "^5.96.1",
-    "webpack-cli": "^5.1.4"
+    "peer": "^1.0.2",
+    "serve": "^14.2.6",
+    "typescript": "^6.0.3",
+    "webpack": "^5.106.2",
+    "webpack-cli": "^7.0.2"
   },
   "dependencies": {
     "@basementuniverse/marble-identicons": "^0.1.2",
-    "peerjs": "^1.5.4",
+    "peerjs": "^1.5.5",
     "qrcode-svg": "^1.1.0"
   }
 }

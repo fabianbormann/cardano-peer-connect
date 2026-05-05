@@ -370,7 +370,7 @@ export default class DAppPeerConnect {
         if (address !== this.connectedWallet) return;
 
         const injectedClients = this.getInjectedApis();
-        if (injectedClients.includes(address) && !args.overwrite) {
+        if (injectedClients.indexOf(address) !== -1 && !args.overwrite) {
           this.logger.info(`${address} already injected`);
           return;
         }
@@ -485,11 +485,11 @@ export default class DAppPeerConnect {
     }
   };
 
-  private getInjectedApis() {
+  private getInjectedApis(): string[] {
     const globalCardano = (window as any).cardano || {};
     return Object.keys(globalCardano)
       .filter((k) => typeof globalCardano[k].identifier === 'string')
-      .map((k) => globalCardano[k].identifier);
+      .map((k) => globalCardano[k].identifier as string);
   }
 
   private isWalletNameInjected = (name: string) => {
