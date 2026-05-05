@@ -18,19 +18,6 @@ interface RpcResponse {
   _result: any;
 }
 
-/**
- * Thin RPC layer over a PeerJS DataConnection.
- *
- * Mirrors the meerkat .register() / .rpc() API so the rest of the codebase
- * can be ported with minimal changes:
- *
- *   meerkat.register(method, handler)  →  rpc.register(method, handler)
- *   meerkat.rpc(addr, method, args, cb) →  rpc.call(method, args, cb)
- *
- * Wire format (sent as JSON string):
- *   Request  { _rpcId, _method, _args }
- *   Response { _rpcId, _result }
- */
 export class PeerRpc {
   private handlers = new Map<string, RpcHandler>();
   private pending = new Map<

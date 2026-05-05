@@ -38,7 +38,6 @@ export default abstract class CardanoPeerConnect {
   protected activeRpc: PeerRpc | null = null;
   protected dappIdentifier: string | null = null;
 
-  // https://cips.cardano.org/cips/cip30/
   protected cip30Functions: Array<Cip30Function> = [
     'getNetworkId',
     'getUtxos',
@@ -56,26 +55,16 @@ export default abstract class CardanoPeerConnect {
   protected _cip30ExperimentalApi?: ExperimentalContainer<any>;
   protected _cip30EnableExperimentalApi?: ExperimentalContainer<any>;
 
-  protected seed: string | null;
-  protected discoverySeed: string | null;
   protected peerJsConfig: PeerOptions;
 
   constructor(
     walletInfo: IWalletInfo,
     args: {
-      seed?: string | null;
-      /** @deprecated WebTorrent trackers are no longer used. Use peerJsConfig instead. */
-      announce?: string[];
-      discoverySeed?: string | null;
       logLevel?: LogLevel;
-      /** PeerJS server configuration. Defaults to the public PeerJS server. */
       peerJsConfig?: PeerOptions;
     } = {}
   ) {
     this.walletInfo = walletInfo;
-
-    this.seed = args.seed ?? null;
-    this.discoverySeed = args.discoverySeed ?? null;
     this.peerJsConfig = args.peerJsConfig ?? {};
     this.logLevel = args.logLevel ?? 'info';
 
@@ -97,25 +86,15 @@ export default abstract class CardanoPeerConnect {
     this.logger.logLevel = level;
   };
 
-  /**
-   * Creates (or reuses) the wallet's discovery peer — a long-lived PeerJS
-   * peer that listens for incoming auto-connect requests from DApps.
-   *
-   * The discovery peer ID is derived from discoverySeed (when provided) and
-   * persisted in localStorage, replacing the former meerkat discovery seed.
-   */
   protected setUpDiscoveryPeer = () => {
     if (this.discoveryPeer && !this.discoveryPeer.destroyed) {
       return;
     }
 
-    const storageKey = `peer-connect-wallet-discovery${
-      this.discoverySeed ? `-${this.discoverySeed}` : ''
-    }-id`;
-    const discoveryId = getPersistentId(storageKey, 'wallet-disc');
+    const discoveryId = getPersistentId('peer-connect-wallet-discovery-id', 'wallet-disc');
 
     this.logger.debug('WALLET: discovery peer ID:', discoveryId);
-    AutoConnectHelper.saveWalletAutoDiscoverySeed(discoveryId);
+    AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
 
     if (this.discoveryPeer) {
       try {
@@ -168,13 +147,7 @@ export default abstract class CardanoPeerConnect {
     });
   };
 
-  /** Returns the discovery peer's ID (formerly called the "discovery seed"). */
-  public getDiscoveryMeerkatSeed = (): string | null => {
-    return this.discoveryPeer?.id ?? null;
-  };
-
-  /** Returns the discovery peer's ID (the address other peers connect to). */
-  public getDiscoveryMeerkatAddress = (): string | null => {
+  public getDiscoveryAddress = (): string | null => {
     return this.discoveryPeer?.id ?? null;
   };
 
@@ -214,14 +187,6 @@ export default abstract class CardanoPeerConnect {
     this._cip30EnableExperimentalApi = dynamicObj;
   }
 
-  /** @deprecated No longer returns a meaningful value. */
-  public getMeercat(_identifier: string): undefined {
-    return undefined;
-  }
-
-  /** No-op — peer tracking is now handled internally. */
-  public clearSeen = () => {};
-
   public injectApi = (overwrite: boolean = false) => {
     if (!this.activeRpc) {
       throw new Error('Not connected to a DApp.');
@@ -260,7 +225,6 @@ export default abstract class CardanoPeerConnect {
   public connect(identifier: string): string {
     this.dappIdentifier = identifier;
 
-    // Close any existing connection before opening a new one
     if (this.activeRpc) {
       this.activeRpc.destroy();
       this.activeRpc = null;
@@ -270,10 +234,7 @@ export default abstract class CardanoPeerConnect {
     }
     this.activeConn = null;
 
-    const storageKey = `peer-connect-wallet${
-      this.seed ? `-${this.seed}` : ''
-    }-id`;
-    const walletId = getPersistentId(storageKey, 'wallet');
+    const walletId = getPersistentId('peer-connect-wallet-id', 'wallet');
 
     this.logger.debug('WALLET: connecting to DApp:', identifier);
 

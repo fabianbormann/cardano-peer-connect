@@ -36,31 +36,23 @@ export default class DAppPeerConnect {
   protected onApiInject?: (name: string, address: string) => void;
 
   private readonly peerJsConfig: PeerOptions;
-  private readonly discoverySeed: string | undefined;
 
-  /**
-   * Creates the DApp's outbound discovery peer that connects to the wallet's
-   * discovery address and triggers auto-connect.
-   */
-  private setUpDiscoveryPeer = (address?: string) => {
-    const walletDiscoveryAddress =
-      address ?? AutoConnectHelper.getWalletDiscoveryAddress();
-    if (!walletDiscoveryAddress) return;
+  private setUpDiscoveryPeer = (targetPeerId?: string) => {
+    const walletDiscoveryPeerId =
+      targetPeerId ?? AutoConnectHelper.getWalletDiscoveryPeerId();
+    if (!walletDiscoveryPeerId) return;
 
     this.logger.debug(
       'DApp: setting up discovery peer targeting wallet at',
-      walletDiscoveryAddress
+      walletDiscoveryPeerId
     );
 
     if (this.walletDiscoveryPeer && !this.walletDiscoveryPeer.destroyed) {
       this.walletDiscoveryPeer.destroy();
     }
 
-    const storageKey = `peer-connect-dapp-discovery${
-      this.discoverySeed ? `-${this.discoverySeed}` : ''
-    }-id`;
-    const discoveryId = getPersistentId(storageKey, 'dapp-disc');
-    AutoConnectHelper.saveWalletAutoDiscoverySeed(discoveryId);
+    const discoveryId = getPersistentId('peer-connect-dapp-discovery-id', 'dapp-disc');
+    AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
 
     this.walletDiscoveryPeer = new Peer(discoveryId, this.peerJsConfig);
 
@@ -69,10 +61,10 @@ export default class DAppPeerConnect {
 
       this.logger.debug(
         'DApp: discovery peer open, connecting to wallet discovery:',
-        walletDiscoveryAddress
+        walletDiscoveryPeerId
       );
 
-      const conn = this.walletDiscoveryPeer.connect(walletDiscoveryAddress, {
+      const conn = this.walletDiscoveryPeer.connect(walletDiscoveryPeerId, {
         reliable: true,
       });
       const rpc = new PeerRpc(conn, this.logger);
@@ -108,9 +100,7 @@ export default class DAppPeerConnect {
 
   constructor({
     dAppInfo,
-    seed,
-    discoverySeed,
-    announce,
+    walletDiscoveryPeerId,
     loggingEnabled,
     verifyConnection,
     onConnect,
@@ -130,17 +120,9 @@ export default class DAppPeerConnect {
       enabled: loggingEnabled,
     });
 
-    if (announce) {
-      this.logger.warn(
-        'DApp: the announce option (WebTorrent trackers) is no longer supported. Use peerJsConfig to configure a PeerJS server.'
-      );
-    }
-
-    this.discoverySeed = discoverySeed;
     this.peerJsConfig = peerJsConfig ?? {};
 
-    const storageKey = `peer-connect-dapp${seed ? `-${seed}` : ''}-id`;
-    const persistentId = getPersistentId(storageKey, 'dapp');
+    const persistentId = getPersistentId('peer-connect-dapp-id', 'dapp');
 
     this.peer = new Peer(persistentId, this.peerJsConfig);
 
@@ -172,9 +154,7 @@ export default class DAppPeerConnect {
     });
 
     if (useWalletDiscovery) {
-      setTimeout(() => {
-        this.setUpDiscoveryPeer(discoverySeed);
-      }, 1000);
+      setTimeout(() => this.setUpDiscoveryPeer(walletDiscoveryPeerId), 1000);
     }
   }
 
@@ -350,7 +330,7 @@ export default class DAppPeerConnect {
         this.logger.debug('DApp: setDiscovery with:', args);
 
         if (useWalletDiscovery) {
-          AutoConnectHelper.saveWalletDiscoveryAddress(
+          AutoConnectHelper.saveWalletDiscoveryPeerId(
             args.walletDiscoveryAddress
           );
           return callback(true);
@@ -518,11 +498,6 @@ export default class DAppPeerConnect {
   }
 
   getAddress() {
-    return this.peer.id;
-  }
-
-  /** Returns the DApp's persistent peer ID (replaces the former meerkat seed). */
-  getSeed() {
     return this.peer.id;
   }
 
