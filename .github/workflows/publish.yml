@@ -1,26 +1,32 @@
 name: Publish Package on npmjs
 
 on:
-  push:
-    branches: ['main']
-  pull_request:
-    branches: ['main']
-
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
   publish:
-    environment: CI
     runs-on: ubuntu-latest
-    if: "contains(github.event.head_commit.message, 'release-please--branches--main')"
+    if: "github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, 'release-please--branches--main')"
+    permissions:
+      id-token: write
+      contents: read
+    
     steps:
-      - uses: actions/checkout@v3
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
 
-      - name: ⬇️ Setup Node.js environment
+      - name: 🔧 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          node-version: '22.14.0'
+          registry-url: https://registry.npmjs.org
+          cache: 'npm'
+          cache-dependency-path: typescript/package-lock.json
+
+      - name: ⬆️ Ensure npm supports Trusted Publishing
+        run: npm i -g npm@^11.5.1
 
       - name: 🔨 Install dependencies
         run: npm ci --ignore-scripts
@@ -28,11 +34,13 @@ jobs:
       - name: 📦 Bundle package
         run: npm run build
 
-      - name: 🫡 Configure npm
+      - name: 🚀 Publish to npm (OIDC only)
+        working-directory: ./typescript
+        env:
+          NPM_CONFIG_USERCONFIG: /dev/null
         run: |
-          echo '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > .npmrc
+          unset NODE_AUTH_TOKEN NPM_TOKEN
+          npm publish --provenance --access public
 
-      - name: 🚀 Publish package on npmjs
-        run: npm publish
-    env:
-      NPM_TOKEN: ${{ secrets.NPMJS_SECRET }}
+      - name: ✅ Verify Published Package
+        run: npm info @fabianbormann/cardano-peer-connect
