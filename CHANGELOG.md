@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.2.19](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.18...v1.2.19) (2026-05-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove the old meerkat api and replace it with peer.js
+* remove cypress and create a more detailed playwright test setup
+
+### Features
+
+* remove cypress and create a more detailed playwright test setup ([6dbfe9a](https://github.com/fabianbormann/cardano-peer-connect/commit/6dbfe9ab347d604e9c2d6e0d9ece67c8e3a7a08f))
+* remove meerkat and work with peerjs instead ([4bae21c](https://github.com/fabianbormann/cardano-peer-connect/commit/4bae21cf9d055ed19bd2099629961422c5be7663))
+* remove the old meerkat api and replace it with peer.js ([c8efce1](https://github.com/fabianbormann/cardano-peer-connect/commit/c8efce1db44a127bc4bcf0fa4188e16400f7753d))
+* update readme with new peer js information ([e37ef9f](https://github.com/fabianbormann/cardano-peer-connect/commit/e37ef9f8f727a010bc4307a413dafba6aa8b6735))
+
+
+### Bug Fixes
+
+* repair ci pipeline ([1be17a5](https://github.com/fabianbormann/cardano-peer-connect/commit/1be17a5c1046c160d57f62da4f5c325c66d1d4dd))
+* repair ci pipeline ([9743e4e](https://github.com/fabianbormann/cardano-peer-connect/commit/9743e4e26a9203bba46a5beeb85dce4b4b7a115d))
+* repair ci pipeline ([5c8b05c](https://github.com/fabianbormann/cardano-peer-connect/commit/5c8b05c58f02e659552413a6b6b2ed765860d33c))
+
 ## [1.2.18](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.17...v1.2.18) (2024-11-27)
 
 
