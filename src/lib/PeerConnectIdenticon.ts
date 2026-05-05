@@ -4,7 +4,7 @@ export default class PeerConnectIdenticon {
   public static getBase64Identicon = (hash: string): string | null => {
     if (hash.length < 68) {
       console.warn(
-        'Meerkat connection hash is to short. Not generating identicon.'
+        'Connection hash is too short. Not generating identicon.'
       );
 
       return null;

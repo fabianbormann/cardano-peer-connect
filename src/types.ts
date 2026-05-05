@@ -1,4 +1,5 @@
 import { Value } from './lib/ExperimentalContainer';
+import type { PeerOptions } from 'peerjs';
 
 export type Cip30Function =
   | 'getNetworkId'
@@ -94,6 +95,7 @@ export interface DAppPeerConnectParameters {
   dAppInfo: Omit<IDAppInfos, 'address'>;
   seed?: string;
   discoverySeed?: string;
+  /** @deprecated WebTorrent trackers are no longer used. Use peerJsConfig instead. */
   announce?: Array<string>;
   loggingEnabled?: boolean;
   verifyConnection?: (
@@ -105,4 +107,6 @@ export interface DAppPeerConnectParameters {
   onApiEject?: (name: string, address: string) => void;
   onApiInject?: (name: string, address: string) => void;
   useWalletDiscovery?: boolean;
+  /** PeerJS server configuration. Defaults to the public PeerJS server. */
+  peerJsConfig?: PeerOptions;
 }

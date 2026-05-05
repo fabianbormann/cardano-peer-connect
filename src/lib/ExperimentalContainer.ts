@@ -22,7 +22,7 @@
  * other's endpoints or perform complex operations.
  */
 import { ExperimentalRpcEndpoint } from '../types';
-import Meerkat from '@fabianbormann/meerkat';
+import { PeerRpc } from './PeerRpc';
 
 // The Value type represents all possible types of values in a DynamicObject.
 export type Value = string | number | boolean | symbol | bigint | object | null
@@ -169,19 +169,17 @@ export function deserializeTypeMapping(jsonString: string): TypeMapping {
 }
 
 /**
- * Builds a set of API calls for a given Meerkat instance, address, serialized API mapping, and remote endpoint.
+ * Builds a set of API calls for a given PeerRpc instance, serialized API mapping, and remote endpoint.
  * The function creates an object containing methods and properties from the serialized API mapping, making it
  * easy to interact with the remote endpoint.
  *
- * @param meerkat A Meerkat instance used to perform JSON-RPC calls.
- * @param address The address to send to.
+ * @param rpc A PeerRpc instance used to perform RPC calls.
  * @param serializedApiMapping A string created from serializeTypeMapping.
  * @param endpoint Remote endpoint to call.
  * @returns An object containing methods and properties for the specified experimental mapping.
  */
 export const buildApiCalls = (
-  meerkat: Meerkat,
-  address: string,
+  rpc: PeerRpc,
   serializedApiMapping: string,
   endpoint: ExperimentalRpcEndpoint
 ): Record<string, Value> => {
@@ -197,22 +195,19 @@ export const buildApiCalls = (
 
     if (typeInfo.valueType === "function" || typeInfo.valueType === "async_function") {
       apiObjectRecord[method] = (...params: Array<any>) => {
-        // Default to an empty array if params are undefined.
         params = params ?? [];
 
         return new Promise((resolve, reject) => {
-          meerkat.rpc(address, endpoint, [method, ...params], (result: any) => {
+          rpc.call(endpoint, [method, ...params], (result: any) => {
             if (result.error) {
-              reject(result.error)
+              reject(result.error);
             } else {
-              resolve(result)
+              resolve(result);
             }
           });
         });
       };
     } else {
-
-      // dealing with non-function properties.
       apiObjectRecord[method] = typeInfo.value ?? null;
     }
   }
@@ -222,36 +217,35 @@ export const buildApiCalls = (
 
 
 /**
- * Registers an experimental endpoint with a Meerkat instance, enabling the remote endpoint to interact with
+ * Registers an experimental endpoint with a PeerRpc instance, enabling the remote endpoint to interact with
  * the given experimental container. The function associates the specified identifier with the experimental
  * container and sets up a callback to handle incoming requests.
  *
- * @param meerkat A Meerkat instance used to register the experimental endpoint.
+ * @param rpc A PeerRpc instance used to register the experimental endpoint.
  * @param endpoint The experimental RPC endpoint to be registered.
  * @param experimentalContainer An ExperimentalContainer instance containing methods and properties to be exposed.
- * @param identifier A unique string identifier to associate with the experimental container.
+ * @param identifier The peer ID of the remote side; only calls from this peer are accepted.
  */
 export const registerExperimentalEndpoint = (
-  meerkat: Meerkat,
+  rpc: PeerRpc,
   endpoint: ExperimentalRpcEndpoint,
   experimentalContainer: ExperimentalContainer<any>,
   identifier: string
 ) => {
 
-  meerkat.register(
+  rpc.register(
     endpoint,
     async (address: string, args: Array<any>, callback: Function) => {
 
       const functionName = args[0] as string;
 
       if (address === identifier) {
-
-        const result = await executeOrGetProperty(experimentalContainer, functionName, ...args.splice(1))
+        const result = await executeOrGetProperty(experimentalContainer, functionName, ...args.splice(1));
 
         if (typeof result !== 'undefined') {
           callback(result);
         }
       }
     }
-  )
+  );
 }
