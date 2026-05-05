@@ -16,7 +16,11 @@
     "wallet",
     "dapp"
   ],
-  "author": "",
+  "author": "Fabian Bormann",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fabianbormann/cardano-peer-connect"
+  },
   "license": "Apache-2.0",
   "devDependencies": {
     "@babel/core": "^7.29.0",
