@@ -105,4 +105,6 @@ export interface DAppPeerConnectParameters {
   onApiInject?: (name: string, address: string) => void;
   useWalletDiscovery?: boolean;
   peerJsConfig?: PeerOptions;
+  /** Timeout for signTx/signData round-trips in ms (human approval can be slow). Default: 600_000. */
+  signingTimeoutMs?: number;
 }

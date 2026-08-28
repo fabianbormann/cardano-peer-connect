@@ -105,6 +105,7 @@
                 path: '/',
                 secure: false
             },
+            signingTimeoutMs: Number(localStorage.getItem('test-signing-timeout-ms')) || undefined,
             onConnect: function(address, walletInfo) {
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'connected';

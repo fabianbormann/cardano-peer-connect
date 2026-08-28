@@ -116,3 +116,33 @@ test('Wallet method resolving undefined reaches the DApp as null (no hang)', asy
     await walletContext.close();
   }
 });
+
+test('signing timeout is configurable and rejects instead of resolving', async ({ browser }) => {
+  const dappContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  const walletContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  await dappContext.addInitScript(() => localStorage.clear());
+  await walletContext.addInitScript(() => localStorage.clear());
+  // Tell the test dApp page to construct with a 2s signing timeout
+  await dappContext.addInitScript(() => localStorage.setItem('test-signing-timeout-ms', '2000'));
+
+  const dappPage = await dappContext.newPage();
+  const walletPage = await walletContext.newPage();
+  await dappPage.goto('/test/e2e/test_dApp.html');
+  const dappPeerId = await dappPage.locator('#address').textContent();
+  await walletContext.addInitScript((id: string) => {
+    localStorage.setItem('test-dapp-peer-id', id);
+  }, dappPeerId as string);
+  await walletPage.goto('/test/e2e/test_wallet.html');
+  await expect(dappPage.locator('#api-status')).toHaveText('API Injected', { timeout: 15_000 });
+
+  try {
+    // 'HANG' makes the mock wallet never respond → the 2s override must reject
+    await dappPage.locator('#sign-message').fill('HANG');
+    await dappPage.locator('#btn-sign-data').click();
+    await expect(dappPage.locator('#sign-error')).toBeVisible({ timeout: 8_000 });
+    await expect(dappPage.locator('#sign-error')).toContainText('timed out');
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});

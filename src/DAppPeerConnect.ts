@@ -36,6 +36,7 @@ export default class DAppPeerConnect {
   protected onApiInject?: (name: string, address: string) => void;
 
   private readonly peerJsConfig: PeerOptions;
+  private readonly signingTimeoutMs: number;
 
   private setUpDiscoveryPeer = (targetPeerId?: string) => {
     const walletDiscoveryPeerId =
@@ -109,6 +110,7 @@ export default class DAppPeerConnect {
     onApiInject,
     useWalletDiscovery,
     peerJsConfig,
+    signingTimeoutMs,
   }: DAppPeerConnectParameters) {
     if (loggingEnabled) {
       this.enableLogging = loggingEnabled;
@@ -121,6 +123,7 @@ export default class DAppPeerConnect {
     });
 
     this.peerJsConfig = peerJsConfig ?? {};
+    this.signingTimeoutMs = signingTimeoutMs ?? 600_000;
 
     const persistentId = getPersistentId('peer-connect-dapp-id', 'dapp');
 
@@ -361,12 +364,17 @@ export default class DAppPeerConnect {
             | Record<string, Value>;
         } = {};
 
+        const signingMethods: Array<Cip30Function> = ['signTx', 'signData'];
+
         for (const method of args.api.methods) {
           api[method] = (...params: Array<any>) =>
-            new Promise((resolve) => {
-              rpc.call('invoke', [method, ...params], (result: any) =>
-                resolve(result)
-              );
+            new Promise((resolve, reject) => {
+              rpc.call('invoke', [method, ...params], resolve, {
+                onError: reject,
+                timeoutMs: signingMethods.includes(method)
+                  ? this.signingTimeoutMs
+                  : undefined,
+              });
             });
         }
 
