@@ -58,7 +58,9 @@ export default class DAppPeerConnect {
     const discoveryId = this.peerId
       ? `${this.peerId}-disc`
       : getPersistentId('peer-connect-dapp-discovery-id', 'dapp-disc', this.storage);
-    AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    if (!this.peerId) {
+      AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    }
 
     this.walletDiscoveryPeer = new Peer(discoveryId, this.peerJsConfig);
 

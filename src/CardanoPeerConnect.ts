@@ -65,7 +65,9 @@ export default abstract class CardanoPeerConnect {
     args: {
       logLevel?: LogLevel;
       peerJsConfig?: PeerOptions;
+      /** Explicit peer id (discovery peer becomes `${peerId}-disc`). Skips fingerprint derivation + storage writes. */
       peerId?: string;
+      /** Storage backend for ids and auto-connect bookkeeping. Default: localStorage. */
       storage?: PeerConnectStorage;
     } = {}
   ) {
@@ -105,7 +107,9 @@ export default abstract class CardanoPeerConnect {
       : getPersistentId('peer-connect-wallet-discovery-id', 'wallet-disc', this.storage);
 
     this.logger.debug('WALLET: discovery peer ID:', discoveryId);
-    AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    if (!this.customPeerId) {
+      AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    }
 
     if (this.discoveryPeer) {
       try {

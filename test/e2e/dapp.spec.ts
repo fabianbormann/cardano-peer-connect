@@ -169,8 +169,10 @@ test('wallet uses an injected peerId and does not touch localStorage for ids', a
   // id derivation must not have written the fingerprint keys
   const walletIdKey = await walletPage.evaluate(() => localStorage.getItem('peer-connect-wallet-id'));
   const discIdKey = await walletPage.evaluate(() => localStorage.getItem('peer-connect-wallet-discovery-id'));
+  const autoConnectDiscIdKey = await walletPage.evaluate(() => localStorage.getItem('cardano-peer-discovery-id'));
   expect(walletIdKey).toBeNull();
   expect(discIdKey).toBeNull();
+  expect(autoConnectDiscIdKey).toBeNull();
 
   await dappContext.close();
   await walletContext.close();
