@@ -146,3 +146,32 @@ test('signing timeout is configurable and rejects instead of resolving', async (
     await walletContext.close();
   }
 });
+
+test('wallet uses an injected peerId and does not touch localStorage for ids', async ({ browser }) => {
+  const dappContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  const walletContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  await dappContext.addInitScript(() => localStorage.clear());
+  await walletContext.addInitScript(() => localStorage.clear());
+
+  const dappPage = await dappContext.newPage();
+  const walletPage = await walletContext.newPage();
+  await dappPage.goto('/test/e2e/test_dApp.html');
+  const dappPeerId = await dappPage.locator('#address').textContent();
+
+  await walletContext.addInitScript((id: string) => {
+    localStorage.setItem('test-dapp-peer-id', id);
+    localStorage.setItem('test-wallet-peer-id', 'wallet-injected-abc123');
+  }, dappPeerId as string);
+  await walletPage.goto('/test/e2e/test_wallet.html');
+
+  await expect(dappPage.locator('#wallet-address')).toHaveText('wallet-injected-abc123', { timeout: 15_000 });
+
+  // id derivation must not have written the fingerprint keys
+  const walletIdKey = await walletPage.evaluate(() => localStorage.getItem('peer-connect-wallet-id'));
+  const discIdKey = await walletPage.evaluate(() => localStorage.getItem('peer-connect-wallet-discovery-id'));
+  expect(walletIdKey).toBeNull();
+  expect(discIdKey).toBeNull();
+
+  await dappContext.close();
+  await walletContext.close();
+});

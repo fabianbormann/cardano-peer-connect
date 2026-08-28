@@ -98,6 +98,7 @@
         }
 
         var wallet = new MockWallet({
+            peerId: localStorage.getItem('test-wallet-peer-id') || undefined,
             peerJsConfig: {
                 host: 'localhost',
                 port: 9000,

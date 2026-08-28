@@ -107,4 +107,14 @@ export interface DAppPeerConnectParameters {
   peerJsConfig?: PeerOptions;
   /** Timeout for signTx/signData round-trips in ms (human approval can be slow). Default: 600_000. */
   signingTimeoutMs?: number;
+  /** Explicit peer id (discovery peer becomes `${peerId}-disc`). Skips fingerprint derivation + storage writes. */
+  peerId?: string;
+  /** Storage backend for ids and auto-connect bookkeeping. Default: localStorage. */
+  storage?: PeerConnectStorage;
+}
+
+export interface PeerConnectStorage {
+  get(key: string): string | null;
+  set(key: string, value: string): void;
+  remove(key: string): void;
 }
