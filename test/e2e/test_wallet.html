@@ -71,7 +71,7 @@
 
             getNetworkId() { log('getNetworkId() → 1'); return Promise.resolve(1); }
             getUtxos() { log('getUtxos() → []'); return Promise.resolve([]); }
-            getCollateral() { log('getCollateral() → []'); return Promise.resolve([]); }
+            getCollateral() { log('getCollateral() → undefined'); return Promise.resolve(undefined); }
             getBalance() { log('getBalance() → 0'); return Promise.resolve('0'); }
             getUsedAddresses() { log('getUsedAddresses() → []'); return Promise.resolve([]); }
             getUnusedAddresses() { log('getUnusedAddresses() → []'); return Promise.resolve([]); }
@@ -81,12 +81,17 @@
 
             signData(addr, payload) {
                 var message = hexToText(payload);
+                if (message === 'THROW') {
+                    log('signData → throwing DataSignError');
+                    return Promise.reject({ code: 3, info: 'User declined to sign the data.' });
+                }
+                if (message === 'HANG') {
+                    log('signData → hanging forever');
+                    return new Promise(function() {});
+                }
                 log('signData(addr=' + addr.slice(0, 24) + '…, msg="' + message + '")');
-                // Fake signature encodes what was signed so the DApp can decode and verify the roundtrip
                 var sigText = 'FAKE-SIG[addr=' + addr + ', msg=' + message + ']';
-                var signature = textToHex(sigText);
-                var key = textToHex('FAKE-KEY:p2p-test-wallet');
-                return Promise.resolve({ signature: signature, key: key });
+                return Promise.resolve({ signature: textToHex(sigText), key: textToHex('FAKE-KEY:p2p-test-wallet') });
             }
 
             submitTx(tx) { log('submitTx()'); return Promise.resolve(tx); }

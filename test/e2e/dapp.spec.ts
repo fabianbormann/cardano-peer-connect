@@ -88,3 +88,31 @@ test('DApp signs data and wallet returns a verifiable fake signature', async ({ 
     await walletContext.close();
   }
 });
+
+test('DApp signData rejects with the wallet-thrown CIP-30 error object', async ({ browser }) => {
+  const { dappPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    // The mock wallet throws DataSignError {code: 3} when the message is 'THROW'
+    await dappPage.locator('#sign-addr').fill('addr_test1mock');
+    await dappPage.locator('#sign-message').fill('THROW');
+    await dappPage.locator('#btn-sign-data').click();
+
+    await expect(dappPage.locator('#sign-error')).toBeVisible({ timeout: 10_000 });
+    await expect(dappPage.locator('#sign-error')).toContainText('"code":3');
+    await expect(dappPage.locator('#sign-error')).toContainText('User declined');
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('Wallet method resolving undefined reaches the DApp as null (no hang)', async ({ browser }) => {
+  const { dappPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    await dappPage.locator('#btn-get-collateral').click();
+    await expect(dappPage.locator('#collateral-result')).toHaveText('null', { timeout: 10_000 });
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
