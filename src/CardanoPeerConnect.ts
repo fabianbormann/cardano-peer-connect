@@ -19,7 +19,7 @@ import {
 import { LogLevel, Logger } from './lib/Logger';
 import AutoConnectHelper from './lib/AutoConnectHelper';
 import PeerConnectIdenticon from './lib/PeerConnectIdenticon';
-import { PeerRpc } from './lib/PeerRpc';
+import { PeerRpc, toRpcError } from './lib/PeerRpc';
 import { getPersistentId } from './lib/PeerIdHelper';
 
 export default abstract class CardanoPeerConnect {
@@ -273,16 +273,19 @@ export default abstract class CardanoPeerConnect {
           async (
             address: string,
             args: Array<any>,
-            callback: Function
+            callback: Function,
+            error?: (err: any) => void
           ) => {
             const cip30Function = args[0] as Cip30Function;
-            if (address === identifier) {
-              const result = await (this as any)[cip30Function](
-                ...args.slice(1)
-              );
-              if (typeof result !== 'undefined') {
-                callback(result);
-              }
+            if (address !== identifier) {
+              return;
+            }
+            try {
+              const result = await (this as any)[cip30Function](...args.slice(1));
+              callback(result === undefined ? null : result);
+            } catch (e) {
+              this.logger.warn(`WALLET: ${cip30Function} threw:`, e);
+              error?.(toRpcError(e));
             }
           }
         );
