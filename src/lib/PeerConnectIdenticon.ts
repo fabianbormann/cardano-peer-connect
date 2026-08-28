@@ -13,10 +13,12 @@ export default class PeerConnectIdenticon {
     // Peer ids already contain '-' (e.g. `wallet-<hash>-<timestamp>`). The
     // underlying identicon lib splits its seed on /[\s\-']/ to build initials
     // and crashes (`i[0].toUpperCase()` on an empty token) when two delimiters
-    // land next to each other. Strip pre-existing delimiters first so the only
-    // '-' characters left are the ones we control below (always >=10 apart and
-    // never at the first/last position), guaranteeing no adjacent/boundary hits.
-    const sanitized = hash.replace(/[\s\-']/g, '');
+    // land next to each other. Substitute pre-existing delimiters with '_'
+    // (not part of the split character class) so the only '-' characters left
+    // are the ones we control below (always >=10 apart and never at the
+    // first/last position), guaranteeing no adjacent/boundary hits — while
+    // preserving every character's position so the hash stays unique.
+    const sanitized = hash.replace(/[\s\-']/g, '_');
 
     return identicon(
       sanitized
