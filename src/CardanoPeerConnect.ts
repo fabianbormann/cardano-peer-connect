@@ -433,6 +433,27 @@ export default abstract class CardanoPeerConnect {
 
   public getIdenticon = () => this.identicon;
 
+  public destroy = (): void => {
+    if (this.activeRpc) {
+      this.activeRpc.destroy();
+      this.activeRpc = null;
+    }
+    if (this.activeConn?.open) {
+      try {
+        this.activeConn.close();
+      } catch (_) {}
+    }
+    this.activeConn = null;
+    if (this.walletPeer && !this.walletPeer.destroyed) {
+      this.walletPeer.destroy();
+    }
+    this.walletPeer = null;
+    if (this.discoveryPeer && !this.discoveryPeer.destroyed) {
+      this.discoveryPeer.destroy();
+    }
+    this.discoveryPeer = null;
+  };
+
   protected abstract getNetworkId(): Promise<number>;
   protected abstract getUtxos(
     amount?: Cbor,

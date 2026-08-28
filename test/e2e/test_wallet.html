@@ -25,11 +25,13 @@
 
     <p>Status: <span id="connection-status" class="disconnected">Disconnected</span></p>
     <p>DApp address: <span id="dapp-address" style="font-family:monospace"></span></p>
+    <p><img id="identicon" alt="" style="width:48px;height:48px"/></p>
 
     <label for="dapp-id-input">DApp peer ID</label>
     <input type="text" id="dapp-id-input" placeholder="dapp-xxxxxxxx-xxxxxxxxx" />
     <button id="btn-connect">Connect</button>
     <button id="btn-disconnect" disabled>Disconnect</button>
+    <button id="btn-destroy">Destroy</button>
 
     <div class="log">
         <strong>Log</strong>
@@ -112,6 +114,7 @@
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'connected';
                 document.getElementById('dapp-address').innerText = connectMessage.dApp.address;
+                document.getElementById('identicon').src = wallet.getIdenticon() || '';
                 document.getElementById('btn-connect').disabled = true;
                 document.getElementById('btn-disconnect').disabled = false;
                 log('Connected to ' + connectMessage.dApp.address);
@@ -140,6 +143,10 @@
             } catch(e) {
                 log('Disconnect error: ' + e.message);
             }
+        });
+
+        document.getElementById('btn-destroy').addEventListener('click', function() {
+            try { wallet.destroy(); log('Destroyed'); } catch(e) { log('Destroy error: ' + e.message); }
         });
 
         // Auto-connect if peer ID was injected via Playwright (test-dapp-peer-id in localStorage)

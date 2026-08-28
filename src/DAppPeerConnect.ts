@@ -529,4 +529,22 @@ export default class DAppPeerConnect {
   };
 
   public getIdenticon = () => this.identicon;
+
+  public destroy = (): void => {
+    try {
+      this.shutdownServer();
+    } catch (_) {}
+    if (this.activeRpc) {
+      this.activeRpc.destroy();
+      this.activeRpc = null;
+    }
+    this.connectedWallet = null;
+    if (this.walletDiscoveryPeer && !this.walletDiscoveryPeer.destroyed) {
+      this.walletDiscoveryPeer.destroy();
+    }
+    this.walletDiscoveryPeer = null;
+    if (!this.peer.destroyed) {
+      this.peer.destroy();
+    }
+  };
 }

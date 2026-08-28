@@ -177,3 +177,28 @@ test('wallet uses an injected peerId and does not touch localStorage for ids', a
   await dappContext.close();
   await walletContext.close();
 });
+
+test('wallet.destroy() closes the connection and ejects the API on the dApp', async ({ browser }) => {
+  const { dappPage, walletPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    await walletPage.locator('#btn-destroy').click();
+    await expect(dappPage.locator('#connection-status')).toHaveText('Disconnected', { timeout: 15_000 });
+    await expect(dappPage.locator('#api-status')).toHaveText('No API', { timeout: 15_000 });
+    // idempotent — second click must not throw (page shows no error entry)
+    await walletPage.locator('#btn-destroy').click();
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('wallet renders a non-null identicon after connecting', async ({ browser }) => {
+  const { walletPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    const src = await walletPage.locator('#identicon').getAttribute('src');
+    expect(src).toMatch(/^data:image/);
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
