@@ -8,6 +8,7 @@ import type {
   Cip30DataSignature,
   IConnectMessage,
   IWalletInfo,
+  PeerConnectStorage,
 } from './types';
 import {
   Value,
@@ -19,8 +20,8 @@ import {
 import { LogLevel, Logger } from './lib/Logger';
 import AutoConnectHelper from './lib/AutoConnectHelper';
 import PeerConnectIdenticon from './lib/PeerConnectIdenticon';
-import { PeerRpc } from './lib/PeerRpc';
-import { getPersistentId } from './lib/PeerIdHelper';
+import { PeerRpc, toRpcError } from './lib/PeerRpc';
+import { getPersistentId, localStorageAdapter } from './lib/PeerIdHelper';
 
 export default abstract class CardanoPeerConnect {
   protected walletInfo: IWalletInfo;
@@ -56,17 +57,25 @@ export default abstract class CardanoPeerConnect {
   protected _cip30EnableExperimentalApi?: ExperimentalContainer<any>;
 
   protected peerJsConfig: PeerOptions;
+  protected customPeerId: string | null;
+  protected storage: PeerConnectStorage;
 
   constructor(
     walletInfo: IWalletInfo,
     args: {
       logLevel?: LogLevel;
       peerJsConfig?: PeerOptions;
+      /** Explicit peer id (discovery peer becomes `${peerId}-disc`). Skips fingerprint derivation + storage writes. */
+      peerId?: string;
+      /** Storage backend for ids and auto-connect bookkeeping. Default: localStorage. */
+      storage?: PeerConnectStorage;
     } = {}
   ) {
     this.walletInfo = walletInfo;
     this.peerJsConfig = args.peerJsConfig ?? {};
     this.logLevel = args.logLevel ?? 'info';
+    this.customPeerId = args.peerId ?? null;
+    this.storage = args.storage ?? localStorageAdapter;
 
     this.logger = new Logger({
       scope: 'CardanoPeerConnect',
@@ -77,6 +86,8 @@ export default abstract class CardanoPeerConnect {
     this.onDisconnect = () => {};
     this.onServerShutdown = () => {};
     this.onApiInject = () => {};
+
+    if (args.storage) AutoConnectHelper.setStorage(args.storage);
 
     this.setUpDiscoveryPeer();
   }
@@ -91,10 +102,14 @@ export default abstract class CardanoPeerConnect {
       return;
     }
 
-    const discoveryId = getPersistentId('peer-connect-wallet-discovery-id', 'wallet-disc');
+    const discoveryId = this.customPeerId
+      ? `${this.customPeerId}-disc`
+      : getPersistentId('peer-connect-wallet-discovery-id', 'wallet-disc', this.storage);
 
     this.logger.debug('WALLET: discovery peer ID:', discoveryId);
-    AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    if (!this.customPeerId) {
+      AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    }
 
     if (this.discoveryPeer) {
       try {
@@ -234,12 +249,15 @@ export default abstract class CardanoPeerConnect {
     }
     this.activeConn = null;
 
-    const walletId = getPersistentId('peer-connect-wallet-id', 'wallet');
+    const walletId = this.customPeerId ?? getPersistentId('peer-connect-wallet-id', 'wallet', this.storage);
 
     this.logger.debug('WALLET: connecting to DApp:', identifier);
 
     const doConnect = () => {
       const attemptConnection = (attempts: number) => {
+        if (!this.walletPeer || this.walletPeer.destroyed) {
+          return;
+        }
         const conn = this.walletPeer!.connect(identifier, { reliable: true });
         this.activeConn = conn;
         const rpc = new PeerRpc(conn, this.logger);
@@ -273,16 +291,19 @@ export default abstract class CardanoPeerConnect {
           async (
             address: string,
             args: Array<any>,
-            callback: Function
+            callback: Function,
+            error?: (err: any) => void
           ) => {
             const cip30Function = args[0] as Cip30Function;
-            if (address === identifier) {
-              const result = await (this as any)[cip30Function](
-                ...args.slice(1)
-              );
-              if (typeof result !== 'undefined') {
-                callback(result);
-              }
+            if (address !== identifier) {
+              return;
+            }
+            try {
+              const result = await (this as any)[cip30Function](...args.slice(1));
+              callback(result === undefined ? null : result);
+            } catch (e) {
+              this.logger.warn(`WALLET: ${cip30Function} threw:`, e);
+              error?.(toRpcError(e));
             }
           }
         );
@@ -414,6 +435,27 @@ export default abstract class CardanoPeerConnect {
   }
 
   public getIdenticon = () => this.identicon;
+
+  public destroy = (): void => {
+    if (this.activeRpc) {
+      this.activeRpc.destroy();
+      this.activeRpc = null;
+    }
+    if (this.activeConn?.open) {
+      try {
+        this.activeConn.close();
+      } catch (_) {}
+    }
+    this.activeConn = null;
+    if (this.walletPeer && !this.walletPeer.destroyed) {
+      this.walletPeer.destroy();
+    }
+    this.walletPeer = null;
+    if (this.discoveryPeer && !this.discoveryPeer.destroyed) {
+      this.discoveryPeer.destroy();
+    }
+    this.discoveryPeer = null;
+  };
 
   protected abstract getNetworkId(): Promise<number>;
   protected abstract getUtxos(

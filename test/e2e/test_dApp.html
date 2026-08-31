@@ -47,6 +47,13 @@
         <dd id="network-id"></dd>
     </div>
 
+    <!-- ── Get Collateral ─────────────────────────────────────── -->
+    <h2>Get Collateral</h2>
+    <button id="btn-get-collateral" disabled>Get Collateral</button>
+    <div id="collateral-box" class="result-box" style="display:none">
+        <dd id="collateral-result"></dd>
+    </div>
+
     <!-- ── Sign Data ──────────────────────────────────────────── -->
     <h2>Sign Data</h2>
     <label for="sign-addr">Address</label>
@@ -64,6 +71,7 @@
         <dt>Signature decoded</dt>
         <dd id="sign-decoded"></dd>
     </div>
+    <div id="sign-error" class="result-box" style="display:none"></div>
 
     <script>
         var injectedApi = null;
@@ -83,6 +91,7 @@
         function setActionsEnabled(enabled) {
             document.getElementById('btn-get-network-id').disabled = !enabled;
             document.getElementById('btn-sign-data').disabled = !enabled;
+            document.getElementById('btn-get-collateral').disabled = !enabled;
         }
 
         var dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
@@ -96,6 +105,7 @@
                 path: '/',
                 secure: false
             },
+            signingTimeoutMs: Number(localStorage.getItem('test-signing-timeout-ms')) || undefined,
             onConnect: function(address, walletInfo) {
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'connected';
@@ -133,6 +143,17 @@
             });
         });
 
+        // ── Get Collateral ──────────────────────────────────────
+        document.getElementById('btn-get-collateral').addEventListener('click', function() {
+            if (!injectedApi) return;
+            injectedApi.enable().then(function(api) {
+                return api.getCollateral();
+            }).then(function(result) {
+                document.getElementById('collateral-result').innerText = JSON.stringify(result);
+                document.getElementById('collateral-box').style.display = 'block';
+            });
+        });
+
         // ── Sign Data ───────────────────────────────────────────
         document.getElementById('btn-sign-data').addEventListener('click', function() {
             if (!injectedApi) return;
@@ -151,10 +172,8 @@
                 document.getElementById('sign-decoded').innerText = hexToText(result.signature);
                 document.getElementById('sign-result').style.display = 'block';
             }).catch(function(e) {
-                document.getElementById('sign-signature').innerText = 'Error: ' + e.message;
-                document.getElementById('sign-key').innerText = '';
-                document.getElementById('sign-decoded').innerText = '';
-                document.getElementById('sign-result').style.display = 'block';
+                document.getElementById('sign-error').innerText = 'REJECTED: ' + JSON.stringify(e);
+                document.getElementById('sign-error').style.display = 'block';
             });
         });
 

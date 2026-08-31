@@ -8,6 +8,7 @@ import type {
   IConnectMessage,
   IDAppInfos,
   IWalletInfo,
+  PeerConnectStorage,
 } from './types';
 import QRCode from 'qrcode-svg';
 import { Value, buildApiCalls } from './lib/ExperimentalContainer';
@@ -15,7 +16,7 @@ import AutoConnectHelper from './lib/AutoConnectHelper';
 import PeerConnectIdenticon from './lib/PeerConnectIdenticon';
 import { Logger, LogLevel } from './lib/Logger';
 import { PeerRpc } from './lib/PeerRpc';
-import { getPersistentId } from './lib/PeerIdHelper';
+import { getPersistentId, localStorageAdapter } from './lib/PeerIdHelper';
 
 export default class DAppPeerConnect {
   private peer: Peer;
@@ -36,6 +37,9 @@ export default class DAppPeerConnect {
   protected onApiInject?: (name: string, address: string) => void;
 
   private readonly peerJsConfig: PeerOptions;
+  private readonly signingTimeoutMs: number;
+  private readonly peerId?: string;
+  private readonly storage: PeerConnectStorage;
 
   private setUpDiscoveryPeer = (targetPeerId?: string) => {
     const walletDiscoveryPeerId =
@@ -51,8 +55,12 @@ export default class DAppPeerConnect {
       this.walletDiscoveryPeer.destroy();
     }
 
-    const discoveryId = getPersistentId('peer-connect-dapp-discovery-id', 'dapp-disc');
-    AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    const discoveryId = this.peerId
+      ? `${this.peerId}-disc`
+      : getPersistentId('peer-connect-dapp-discovery-id', 'dapp-disc', this.storage);
+    if (!this.peerId) {
+      AutoConnectHelper.saveDiscoveryPeerId(discoveryId);
+    }
 
     this.walletDiscoveryPeer = new Peer(discoveryId, this.peerJsConfig);
 
@@ -109,6 +117,9 @@ export default class DAppPeerConnect {
     onApiInject,
     useWalletDiscovery,
     peerJsConfig,
+    signingTimeoutMs,
+    peerId,
+    storage,
   }: DAppPeerConnectParameters) {
     if (loggingEnabled) {
       this.enableLogging = loggingEnabled;
@@ -121,8 +132,13 @@ export default class DAppPeerConnect {
     });
 
     this.peerJsConfig = peerJsConfig ?? {};
+    this.signingTimeoutMs = signingTimeoutMs ?? 600_000;
+    this.peerId = peerId;
+    this.storage = storage ?? localStorageAdapter;
 
-    const persistentId = getPersistentId('peer-connect-dapp-id', 'dapp');
+    if (storage) AutoConnectHelper.setStorage(storage);
+
+    const persistentId = peerId ?? getPersistentId('peer-connect-dapp-id', 'dapp', storage);
 
     this.peer = new Peer(persistentId, this.peerJsConfig);
 
@@ -361,12 +377,17 @@ export default class DAppPeerConnect {
             | Record<string, Value>;
         } = {};
 
+        const signingMethods: Array<Cip30Function> = ['signTx', 'signData'];
+
         for (const method of args.api.methods) {
           api[method] = (...params: Array<any>) =>
-            new Promise((resolve) => {
-              rpc.call('invoke', [method, ...params], (result: any) =>
-                resolve(result)
-              );
+            new Promise((resolve, reject) => {
+              rpc.call('invoke', [method, ...params], resolve, {
+                onError: reject,
+                timeoutMs: signingMethods.includes(method)
+                  ? this.signingTimeoutMs
+                  : undefined,
+              });
             });
         }
 
@@ -508,4 +529,22 @@ export default class DAppPeerConnect {
   };
 
   public getIdenticon = () => this.identicon;
+
+  public destroy = (): void => {
+    try {
+      this.shutdownServer();
+    } catch (_) {}
+    if (this.activeRpc) {
+      this.activeRpc.destroy();
+      this.activeRpc = null;
+    }
+    this.connectedWallet = null;
+    if (this.walletDiscoveryPeer && !this.walletDiscoveryPeer.destroyed) {
+      this.walletDiscoveryPeer.destroy();
+    }
+    this.walletDiscoveryPeer = null;
+    if (!this.peer.destroyed) {
+      this.peer.destroy();
+    }
+  };
 }

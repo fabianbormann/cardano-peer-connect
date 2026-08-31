@@ -25,11 +25,13 @@
 
     <p>Status: <span id="connection-status" class="disconnected">Disconnected</span></p>
     <p>DApp address: <span id="dapp-address" style="font-family:monospace"></span></p>
+    <p><img id="identicon" alt="" style="width:48px;height:48px"/></p>
 
     <label for="dapp-id-input">DApp peer ID</label>
     <input type="text" id="dapp-id-input" placeholder="dapp-xxxxxxxx-xxxxxxxxx" />
     <button id="btn-connect">Connect</button>
     <button id="btn-disconnect" disabled>Disconnect</button>
+    <button id="btn-destroy">Destroy</button>
 
     <div class="log">
         <strong>Log</strong>
@@ -71,7 +73,7 @@
 
             getNetworkId() { log('getNetworkId() → 1'); return Promise.resolve(1); }
             getUtxos() { log('getUtxos() → []'); return Promise.resolve([]); }
-            getCollateral() { log('getCollateral() → []'); return Promise.resolve([]); }
+            getCollateral() { log('getCollateral() → undefined'); return Promise.resolve(undefined); }
             getBalance() { log('getBalance() → 0'); return Promise.resolve('0'); }
             getUsedAddresses() { log('getUsedAddresses() → []'); return Promise.resolve([]); }
             getUnusedAddresses() { log('getUnusedAddresses() → []'); return Promise.resolve([]); }
@@ -81,18 +83,24 @@
 
             signData(addr, payload) {
                 var message = hexToText(payload);
+                if (message === 'THROW') {
+                    log('signData → throwing DataSignError');
+                    return Promise.reject({ code: 3, info: 'User declined to sign the data.' });
+                }
+                if (message === 'HANG') {
+                    log('signData → hanging forever');
+                    return new Promise(function() {});
+                }
                 log('signData(addr=' + addr.slice(0, 24) + '…, msg="' + message + '")');
-                // Fake signature encodes what was signed so the DApp can decode and verify the roundtrip
                 var sigText = 'FAKE-SIG[addr=' + addr + ', msg=' + message + ']';
-                var signature = textToHex(sigText);
-                var key = textToHex('FAKE-KEY:p2p-test-wallet');
-                return Promise.resolve({ signature: signature, key: key });
+                return Promise.resolve({ signature: textToHex(sigText), key: textToHex('FAKE-KEY:p2p-test-wallet') });
             }
 
             submitTx(tx) { log('submitTx()'); return Promise.resolve(tx); }
         }
 
         var wallet = new MockWallet({
+            peerId: localStorage.getItem('test-wallet-peer-id') || undefined,
             peerJsConfig: {
                 host: 'localhost',
                 port: 9000,
@@ -106,6 +114,7 @@
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'connected';
                 document.getElementById('dapp-address').innerText = connectMessage.dApp.address;
+                document.getElementById('identicon').src = wallet.getIdenticon() || '';
                 document.getElementById('btn-connect').disabled = true;
                 document.getElementById('btn-disconnect').disabled = false;
                 log('Connected to ' + connectMessage.dApp.address);
@@ -134,6 +143,10 @@
             } catch(e) {
                 log('Disconnect error: ' + e.message);
             }
+        });
+
+        document.getElementById('btn-destroy').addEventListener('click', function() {
+            try { wallet.destroy(); log('Destroyed'); } catch(e) { log('Destroy error: ' + e.message); }
         });
 
         // Auto-connect if peer ID was injected via Playwright (test-dapp-peer-id in localStorage)

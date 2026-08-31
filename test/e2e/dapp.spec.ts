@@ -88,3 +88,136 @@ test('DApp signs data and wallet returns a verifiable fake signature', async ({ 
     await walletContext.close();
   }
 });
+
+test('DApp signData rejects with the wallet-thrown CIP-30 error object', async ({ browser }) => {
+  const { dappPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    // The mock wallet throws DataSignError {code: 3} when the message is 'THROW'
+    await dappPage.locator('#sign-addr').fill('addr_test1mock');
+    await dappPage.locator('#sign-message').fill('THROW');
+    await dappPage.locator('#btn-sign-data').click();
+
+    await expect(dappPage.locator('#sign-error')).toBeVisible({ timeout: 10_000 });
+    await expect(dappPage.locator('#sign-error')).toContainText('"code":3');
+    await expect(dappPage.locator('#sign-error')).toContainText('User declined');
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('Wallet method resolving undefined reaches the DApp as null (no hang)', async ({ browser }) => {
+  const { dappPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    await dappPage.locator('#btn-get-collateral').click();
+    await expect(dappPage.locator('#collateral-result')).toHaveText('null', { timeout: 10_000 });
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('signing timeout is configurable and rejects instead of resolving', async ({ browser }) => {
+  const dappContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  const walletContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  await dappContext.addInitScript(() => localStorage.clear());
+  await walletContext.addInitScript(() => localStorage.clear());
+  // Tell the test dApp page to construct with a 2s signing timeout
+  await dappContext.addInitScript(() => localStorage.setItem('test-signing-timeout-ms', '2000'));
+
+  const dappPage = await dappContext.newPage();
+  const walletPage = await walletContext.newPage();
+  await dappPage.goto('/test/e2e/test_dApp.html');
+  const dappPeerId = await dappPage.locator('#address').textContent();
+  await walletContext.addInitScript((id: string) => {
+    localStorage.setItem('test-dapp-peer-id', id);
+  }, dappPeerId as string);
+  await walletPage.goto('/test/e2e/test_wallet.html');
+  await expect(dappPage.locator('#api-status')).toHaveText('API Injected', { timeout: 15_000 });
+
+  try {
+    // 'HANG' makes the mock wallet never respond → the 2s override must reject
+    await dappPage.locator('#sign-message').fill('HANG');
+    await dappPage.locator('#btn-sign-data').click();
+    await expect(dappPage.locator('#sign-error')).toBeVisible({ timeout: 8_000 });
+    await expect(dappPage.locator('#sign-error')).toContainText('timed out');
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('wallet uses an injected peerId and does not touch localStorage for ids', async ({ browser }) => {
+  const dappContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  const walletContext = await browser.newContext({ baseURL: 'http://localhost:3000' });
+  await dappContext.addInitScript(() => localStorage.clear());
+  await walletContext.addInitScript(() => localStorage.clear());
+
+  const dappPage = await dappContext.newPage();
+  const walletPage = await walletContext.newPage();
+  await dappPage.goto('/test/e2e/test_dApp.html');
+  const dappPeerId = await dappPage.locator('#address').textContent();
+
+  await walletContext.addInitScript((id: string) => {
+    localStorage.setItem('test-dapp-peer-id', id);
+    localStorage.setItem('test-wallet-peer-id', 'wallet-injected-abc123');
+  }, dappPeerId as string);
+  await walletPage.goto('/test/e2e/test_wallet.html');
+
+  await expect(dappPage.locator('#wallet-address')).toHaveText('wallet-injected-abc123', { timeout: 15_000 });
+
+  // id derivation must not have written the fingerprint keys
+  const walletIdKey = await walletPage.evaluate(() => localStorage.getItem('peer-connect-wallet-id'));
+  const discIdKey = await walletPage.evaluate(() => localStorage.getItem('peer-connect-wallet-discovery-id'));
+  const autoConnectDiscIdKey = await walletPage.evaluate(() => localStorage.getItem('cardano-peer-discovery-id'));
+  expect(walletIdKey).toBeNull();
+  expect(discIdKey).toBeNull();
+  expect(autoConnectDiscIdKey).toBeNull();
+
+  await dappContext.close();
+  await walletContext.close();
+});
+
+test('wallet.destroy() closes the connection and ejects the API on the dApp', async ({ browser }) => {
+  const { dappPage, walletPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    await walletPage.locator('#btn-destroy').click();
+    await expect(dappPage.locator('#connection-status')).toHaveText('Disconnected', { timeout: 15_000 });
+    await expect(dappPage.locator('#api-status')).toHaveText('No API', { timeout: 15_000 });
+    // idempotent — second click must not throw (page shows no error entry)
+    await walletPage.locator('#btn-destroy').click();
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('wallet renders a non-null identicon after connecting', async ({ browser }) => {
+  const { walletPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    const src = await walletPage.locator('#identicon').getAttribute('src');
+    expect(src).toMatch(/^data:image/);
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
+
+test('wallet.destroy() settles an in-flight signing call instead of hanging forever', async ({ browser }) => {
+  const { dappPage, walletPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    // 'HANG' makes the mock wallet never respond to signData, so this promise
+    // would otherwise hang until the (10 min default) signing timeout.
+    await dappPage.locator('#sign-addr').fill('addr_test1mock');
+    await dappPage.locator('#sign-message').fill('HANG');
+    await dappPage.locator('#btn-sign-data').click();
+
+    await walletPage.locator('#btn-destroy').click();
+
+    await expect(dappPage.locator('#sign-error')).toBeVisible({ timeout: 15_000 });
+    await expect(dappPage.locator('#sign-error')).toContainText('connection closed');
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});
