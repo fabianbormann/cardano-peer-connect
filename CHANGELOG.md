@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.0] - 2026-08-28
+
+### Added
+- `_error` RPC frames: wallet-thrown CIP-30 errors (TxSignError, DataSignError, APIError) now reject the dApp's promise instead of hanging into a timeout
+- `signingTimeoutMs` on `DAppPeerConnectParameters` (default 10 min) — signTx/signData no longer race the 30 s RPC timeout
+- `peerId` + `storage` (`PeerConnectStorage`) constructor options on both classes for extension/MV3 hosts
+- `destroy()` on `CardanoPeerConnect` and `DAppPeerConnect`
+- Package root re-exports: PeerConnectStorage, IWalletInfo, IConnectMessage, DAppPeerConnectParameters types and toRpcError
+
+### Fixed
+- CIP-30 methods resolving `undefined` no longer hang the dApp (coerced to `null`)
+- Identicons render again with peerjs-era short ids (threshold 68 → 20)
+- Identicon hash sanitization substitutes delimiters (underscore) so distinct peer-id pairs keep distinct identicons, and the injected-peerId path performs no storage writes
+
 ## [1.2.19](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.18...v1.2.19) (2026-05-05)
 
 
