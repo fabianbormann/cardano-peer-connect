@@ -255,6 +255,9 @@ export default abstract class CardanoPeerConnect {
 
     const doConnect = () => {
       const attemptConnection = (attempts: number) => {
+        if (!this.walletPeer || this.walletPeer.destroyed) {
+          return;
+        }
         const conn = this.walletPeer!.connect(identifier, { reliable: true });
         this.activeConn = conn;
         const rpc = new PeerRpc(conn, this.logger);

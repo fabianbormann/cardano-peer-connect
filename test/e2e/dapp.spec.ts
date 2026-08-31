@@ -202,3 +202,22 @@ test('wallet renders a non-null identicon after connecting', async ({ browser })
     await walletContext.close();
   }
 });
+
+test('wallet.destroy() settles an in-flight signing call instead of hanging forever', async ({ browser }) => {
+  const { dappPage, walletPage, dappContext, walletContext } = await connectAndInjectApi(browser);
+  try {
+    // 'HANG' makes the mock wallet never respond to signData, so this promise
+    // would otherwise hang until the (10 min default) signing timeout.
+    await dappPage.locator('#sign-addr').fill('addr_test1mock');
+    await dappPage.locator('#sign-message').fill('HANG');
+    await dappPage.locator('#btn-sign-data').click();
+
+    await walletPage.locator('#btn-destroy').click();
+
+    await expect(dappPage.locator('#sign-error')).toBeVisible({ timeout: 15_000 });
+    await expect(dappPage.locator('#sign-error')).toContainText('connection closed');
+  } finally {
+    await dappContext.close();
+    await walletContext.close();
+  }
+});

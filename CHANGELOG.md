@@ -14,6 +14,9 @@
 - Identicons render again with peerjs-era short ids (threshold 68 → 20)
 - Identicon hash sanitization substitutes delimiters (underscore) so distinct peer-id pairs keep distinct identicons, and the injected-peerId path performs no storage writes
 
+### Notes
+- dApps on 1.3.0 talking to pre-1.3.0 wallets: a declined signature surfaces only via the signing timeout (default 10 min) since old wallets send no error frames — tune signingTimeoutMs when supporting old wallets.
+
 ## [1.2.19](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.18...v1.2.19) (2026-05-05)
 
 

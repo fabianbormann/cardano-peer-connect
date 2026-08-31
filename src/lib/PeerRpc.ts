@@ -147,8 +147,13 @@ export class PeerRpc {
   }
 
   destroy(): void {
-    for (const { timer } of this.pending.values()) {
-      if (timer) clearTimeout(timer);
+    for (const entry of this.pending.values()) {
+      if (entry.timer) clearTimeout(entry.timer);
+      if (entry.onError) {
+        entry.onError({ code: -2, info: 'PeerRpc: connection closed' });
+      } else {
+        entry.callback({ error: 'connection closed' });
+      }
     }
     this.pending.clear();
     this.handlers.clear();
