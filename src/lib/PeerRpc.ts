@@ -147,15 +147,20 @@ export class PeerRpc {
   }
 
   destroy(): void {
-    for (const entry of this.pending.values()) {
-      if (entry.timer) clearTimeout(entry.timer);
-      if (entry.onError) {
-        entry.onError({ code: -2, info: 'PeerRpc: connection closed' });
-      } else {
-        entry.callback({ error: 'connection closed' });
-      }
-    }
+    const entries = Array.from(this.pending.values());
     this.pending.clear();
     this.handlers.clear();
+    for (const entry of entries) {
+      if (entry.timer) clearTimeout(entry.timer);
+      try {
+        if (entry.onError) {
+          entry.onError({ code: -2, info: 'PeerRpc: connection closed' });
+        } else {
+          entry.callback({ error: 'connection closed' });
+        }
+      } catch (e) {
+        this.logger.warn('PeerRpc: pending-call settlement threw during destroy', e);
+      }
+    }
   }
 }
