@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.2.20](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.19...v1.2.20) (2026-08-31)
+
+
+### Features
+
+* **dapp:** reject CIP-30 proxies on wallet errors; configurable signing timeout ([eb1aa07](https://github.com/fabianbormann/cardano-peer-connect/commit/eb1aa07cc47315ddcee84327fd270ce4309b8ab9))
+* destroy() lifecycle on both classes; fix identicon threshold for short peer ids ([186c617](https://github.com/fabianbormann/cardano-peer-connect/commit/186c6174a96167c27208b6a5ad061f8ab74dfd2e))
+* injectable peer id and storage adapter (extension-safe identity) ([073966b](https://github.com/fabianbormann/cardano-peer-connect/commit/073966bd41e0e357438a77bc9cad6038a06435b2))
+* **rpc:** add _error frames, per-call timeout override, and undefined→null result coercion ([0cba85c](https://github.com/fabianbormann/cardano-peer-connect/commit/0cba85c9fcdd4109a3ae36cd61d6000459e643da))
+* **wallet:** reply _error frames instead of hanging when a CIP-30 method throws ([a2ebfc4](https://github.com/fabianbormann/cardano-peer-connect/commit/a2ebfc4d9e42ee02c51d01872c9be28b7a84c801))
+
+
+### Bug Fixes
+
+* **identicon:** substitute delimiters instead of stripping to preserve hash uniqueness ([bba5de0](https://github.com/fabianbormann/cardano-peer-connect/commit/bba5de05681dd43ab4a52a9dc2ca288c20d5236e))
+* **rpc:** drain pending before settling in destroy() to prevent reentrant recursion ([cd84a22](https://github.com/fabianbormann/cardano-peer-connect/commit/cd84a2259837c0cb4c1a5e8214fce7d861cfd600))
+* settle pending RPC calls on destroy and guard connect retry after teardown ([fa71132](https://github.com/fabianbormann/cardano-peer-connect/commit/fa7113284a8dce351292dd0fc6810075cd8fb963))
+* skip discovery-id bookkeeping writes on injected peerId path ([390cb0a](https://github.com/fabianbormann/cardano-peer-connect/commit/390cb0ad297f87dcb7f385b82316a3564ef1c717))
+
 ## [1.3.0] - 2026-08-28
 
 ### Added
