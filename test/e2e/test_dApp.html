@@ -179,12 +179,28 @@
 
         function copyAddress() {
             var text = document.getElementById('address').innerText;
-            navigator.clipboard.writeText(text).then(function() {
+            var done = function() {
                 document.getElementById('button').innerText = 'Copied!';
                 setTimeout(function() {
                     document.getElementById('button').innerText = 'Copy';
                 }, 1000);
-            });
+            };
+            function fallback() {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) { /* nothing to do */ }
+                document.body.removeChild(ta);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(fallback);
+            } else {
+                fallback();
+            }
         }
     </script>
 </body>
