@@ -433,8 +433,27 @@ export default class DAppPeerConnect {
           );
         }
 
-        (window as any).cardano = (window as any).cardano || {};
-        (window as any).cardano[args.api.name.toLowerCase()] = cip30Api;
+        // Other installed wallets may define `window.cardano` as a read-only
+        // (getter-only) property, so reassigning it — even to itself via
+        // `= cardano || {}` — throws. Create it only when absent, and add our
+        // sub-key to the (extensible) namespace object.
+        const win = window as any;
+        try {
+          if (!win.cardano) {
+            win.cardano = {};
+          }
+          win.cardano[args.api.name.toLowerCase()] = cip30Api;
+        } catch (e) {
+          this.logger.error('Failed to inject api into window.cardano', e);
+          return callback({
+            dApp: this.dAppInfo,
+            connected: false,
+            error: true,
+            errorMessage: `Failed to inject api into window.cardano: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          });
+        }
         this.logger.info(
           `injected api of ${args.api.name} into window.cardano`
         );
