@@ -54,6 +54,19 @@
         <dd id="collateral-result"></dd>
     </div>
 
+    <!-- ── CIP-30 Read Methods ─────────────────────────────────── -->
+    <h2>CIP-30 Read Methods</h2>
+    <div id="read-methods">
+        <button class="read-btn" data-method="getBalance" disabled>getBalance</button>
+        <button class="read-btn" data-method="getUtxos" disabled>getUtxos</button>
+        <button class="read-btn" data-method="getUsedAddresses" disabled>getUsedAddresses</button>
+        <button class="read-btn" data-method="getUnusedAddresses" disabled>getUnusedAddresses</button>
+        <button class="read-btn" data-method="getChangeAddress" disabled>getChangeAddress</button>
+        <button class="read-btn" data-method="getRewardAddresses" disabled>getRewardAddresses</button>
+        <button id="btn-run-all-reads" disabled>Run all</button>
+    </div>
+    <div id="read-result" class="result-box" style="display:none; white-space:pre-wrap; max-height:260px; overflow:auto;"></div>
+
     <!-- ── Sign Data ──────────────────────────────────────────── -->
     <h2>Sign Data</h2>
     <label for="sign-addr">Address</label>
@@ -92,6 +105,10 @@
             document.getElementById('btn-get-network-id').disabled = !enabled;
             document.getElementById('btn-sign-data').disabled = !enabled;
             document.getElementById('btn-get-collateral').disabled = !enabled;
+            document.getElementById('btn-run-all-reads').disabled = !enabled;
+            Array.prototype.forEach.call(document.querySelectorAll('.read-btn'), function(b) {
+                b.disabled = !enabled;
+            });
         }
 
         var dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
@@ -175,6 +192,43 @@
                 document.getElementById('sign-error').innerText = 'REJECTED: ' + JSON.stringify(e);
                 document.getElementById('sign-error').style.display = 'block';
             });
+        });
+
+        function appendReadLine(line) {
+            var out = document.getElementById('read-result');
+            out.style.display = 'block';
+            out.textContent = (out.textContent ? out.textContent + '\n' : '') + line;
+        }
+
+        function callReadMethod(name) {
+            if (!injectedApi) return Promise.resolve();
+            return injectedApi.enable().then(function(api) {
+                if (typeof api[name] !== 'function') {
+                    throw { info: 'method not exposed by wallet' };
+                }
+                return api[name]();
+            }).then(function(res) {
+                appendReadLine(name + ' \u2192 ' + JSON.stringify(res));
+            }).catch(function(e) {
+                appendReadLine(name + ' \u2717 ' + JSON.stringify(e));
+            });
+        }
+
+        Array.prototype.forEach.call(document.querySelectorAll('.read-btn'), function(btn) {
+            btn.addEventListener('click', function() {
+                document.getElementById('read-result').textContent = '';
+                callReadMethod(btn.getAttribute('data-method'));
+            });
+        });
+
+        document.getElementById('btn-run-all-reads').addEventListener('click', function() {
+            document.getElementById('read-result').textContent = '';
+            var methods = ['getNetworkId', 'getBalance', 'getUtxos', 'getCollateral',
+                'getUsedAddresses', 'getUnusedAddresses', 'getChangeAddress', 'getRewardAddresses'];
+            // Sequential so the log stays ordered and we exercise the tunnel repeatedly.
+            methods.reduce(function(chain, m) {
+                return chain.then(function() { return callReadMethod(m); });
+            }, Promise.resolve());
         });
 
         function copyAddress() {
