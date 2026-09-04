@@ -433,8 +433,27 @@ export default class DAppPeerConnect {
           );
         }
 
-        (window as any).cardano = (window as any).cardano || {};
-        (window as any).cardano[args.api.name.toLowerCase()] = cip30Api;
+        // Other installed wallets may define `window.cardano` as a read-only
+        // (getter-only) property, so reassigning it — even to itself via
+        // `= cardano || {}` — throws. Create it only when absent, and add our
+        // sub-key to the (extensible) namespace object.
+        const win = window as any;
+        try {
+          if (!win.cardano) {
+            win.cardano = {};
+          }
+          win.cardano[args.api.name.toLowerCase()] = cip30Api;
+        } catch (e) {
+          this.logger.error('Failed to inject api into window.cardano', e);
+          return callback({
+            dApp: this.dAppInfo,
+            connected: false,
+            error: true,
+            errorMessage: `Failed to inject api into window.cardano: ${
+              e instanceof Error ? e.message : String(e)
+            }`,
+          });
+        }
         this.logger.info(
           `injected api of ${args.api.name} into window.cardano`
         );
@@ -483,6 +502,15 @@ export default class DAppPeerConnect {
         dApp: this.dAppInfo,
       };
       this.activeRpc.call('shutdown', status, () => {});
+      // The wallet handles 'shutdown' by tearing down its RPC WITHOUT closing
+      // the WebRTC connection, so the dApp never receives a 'close' event.
+      // Update our own state now (the send above is synchronous): destroy the
+      // RPC and eject the API so onDisconnect/onApiEject fire and any further
+      // CIP-30 call fails fast instead of hanging against a dead RPC.
+      const wallet = this.connectedWallet;
+      this.activeRpc.destroy();
+      this.activeRpc = null;
+      this.leftServer(wallet);
     }
   };
 

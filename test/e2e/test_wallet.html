@@ -121,14 +121,17 @@
             }
         });
 
-        wallet.setOnDisconnect(function() {
+        function markDisconnected(reason) {
             document.getElementById('connection-status').innerText = 'Disconnected';
             document.getElementById('connection-status').className = 'disconnected';
             document.getElementById('dapp-address').innerText = '';
             document.getElementById('btn-connect').disabled = false;
             document.getElementById('btn-disconnect').disabled = true;
-            log('Disconnected');
-        });
+            log('Disconnected' + (reason ? ' (' + reason + ')' : ''));
+        }
+
+        wallet.setOnDisconnect(function() { markDisconnected('peer closed'); });
+        wallet.setOnServerShutdown(function() { markDisconnected('dApp shut down'); });
 
         document.getElementById('btn-connect').addEventListener('click', function() {
             var dappId = document.getElementById('dapp-id-input').value.trim();

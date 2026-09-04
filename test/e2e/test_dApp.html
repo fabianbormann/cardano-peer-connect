@@ -39,6 +39,14 @@
     <p>Status: <span id="connection-status" class="disconnected">Disconnected</span></p>
     <p>API: <span id="api-status">No API</span>&nbsp;&nbsp;Wallet: <span id="wallet-address" style="font-family:monospace"></span></p>
 
+    <p>
+        <button id="btn-dapp-disconnect" disabled>Disconnect (shut down)</button>
+    </p>
+
+    <!-- ── Lifecycle Events ───────────────────────────────────── -->
+    <h2>Lifecycle Events</h2>
+    <ul id="lifecycle-log" style="list-style:none; padding:6px; margin:0; border:1px solid #ddd; font-family:monospace; font-size:0.8rem; max-height:180px; overflow:auto;"></ul>
+
     <!-- ── Get Network ID ─────────────────────────────────────── -->
     <h2>Get Network ID</h2>
     <button id="btn-get-network-id" disabled>Get Network ID</button>
@@ -53,6 +61,19 @@
     <div id="collateral-box" class="result-box" style="display:none">
         <dd id="collateral-result"></dd>
     </div>
+
+    <!-- ── CIP-30 Read Methods ─────────────────────────────────── -->
+    <h2>CIP-30 Read Methods</h2>
+    <div id="read-methods">
+        <button class="read-btn" data-method="getBalance" disabled>getBalance</button>
+        <button class="read-btn" data-method="getUtxos" disabled>getUtxos</button>
+        <button class="read-btn" data-method="getUsedAddresses" disabled>getUsedAddresses</button>
+        <button class="read-btn" data-method="getUnusedAddresses" disabled>getUnusedAddresses</button>
+        <button class="read-btn" data-method="getChangeAddress" disabled>getChangeAddress</button>
+        <button class="read-btn" data-method="getRewardAddresses" disabled>getRewardAddresses</button>
+        <button id="btn-run-all-reads" disabled>Run all</button>
+    </div>
+    <div id="read-result" class="result-box" style="display:none; white-space:pre-wrap; max-height:260px; overflow:auto;"></div>
 
     <!-- ── Sign Data ──────────────────────────────────────────── -->
     <h2>Sign Data</h2>
@@ -92,6 +113,18 @@
             document.getElementById('btn-get-network-id').disabled = !enabled;
             document.getElementById('btn-sign-data').disabled = !enabled;
             document.getElementById('btn-get-collateral').disabled = !enabled;
+            document.getElementById('btn-run-all-reads').disabled = !enabled;
+            document.getElementById('btn-dapp-disconnect').disabled = !enabled;
+            Array.prototype.forEach.call(document.querySelectorAll('.read-btn'), function(b) {
+                b.disabled = !enabled;
+            });
+        }
+
+        function logLifecycle(msg) {
+            var ul = document.getElementById('lifecycle-log');
+            var li = document.createElement('li');
+            li.textContent = new Date().toLocaleTimeString() + '  ' + msg;
+            ul.insertBefore(li, ul.firstChild);
         }
 
         var dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
@@ -107,11 +140,13 @@
             },
             signingTimeoutMs: Number(localStorage.getItem('test-signing-timeout-ms')) || undefined,
             onConnect: function(address, walletInfo) {
+                logLifecycle('onConnect: ' + address);
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'connected';
                 document.getElementById('wallet-address').innerText = address;
             },
             onDisconnect: function(address) {
+                logLifecycle('onDisconnect: ' + address);
                 document.getElementById('connection-status').innerText = 'Disconnected';
                 document.getElementById('connection-status').className = 'disconnected';
                 document.getElementById('api-status').innerText = 'No API';
@@ -120,9 +155,13 @@
                 injectedApi = null;
             },
             onApiInject: function(name, address) {
+                logLifecycle('onApiInject: ' + name);
                 document.getElementById('api-status').innerText = 'API Injected';
                 injectedApi = window.cardano[name.toLowerCase()];
                 setActionsEnabled(true);
+            },
+            onApiEject: function(name, address) {
+                logLifecycle('onApiEject: ' + name);
             }
         });
 
@@ -177,14 +216,78 @@
             });
         });
 
+        document.getElementById('btn-dapp-disconnect').addEventListener('click', function() {
+            logLifecycle('dApp: shutdownServer() — notifying wallet');
+            dAppConnect.shutdownServer();
+        });
+
+        // Notify the wallet on tab close so it can drop the session promptly,
+        // instead of relying on the WebRTC close/ICE timeout.
+        window.addEventListener('beforeunload', function() {
+            try { dAppConnect.shutdownServer(); } catch (e) { /* nothing to do */ }
+        });
+
+        function appendReadLine(line) {
+            var out = document.getElementById('read-result');
+            out.style.display = 'block';
+            out.textContent = (out.textContent ? out.textContent + '\n' : '') + line;
+        }
+
+        function callReadMethod(name) {
+            if (!injectedApi) return Promise.resolve();
+            return injectedApi.enable().then(function(api) {
+                if (typeof api[name] !== 'function') {
+                    throw { info: 'method not exposed by wallet' };
+                }
+                return api[name]();
+            }).then(function(res) {
+                appendReadLine(name + ' \u2192 ' + JSON.stringify(res));
+            }).catch(function(e) {
+                appendReadLine(name + ' \u2717 ' + JSON.stringify(e));
+            });
+        }
+
+        Array.prototype.forEach.call(document.querySelectorAll('.read-btn'), function(btn) {
+            btn.addEventListener('click', function() {
+                document.getElementById('read-result').textContent = '';
+                callReadMethod(btn.getAttribute('data-method'));
+            });
+        });
+
+        document.getElementById('btn-run-all-reads').addEventListener('click', function() {
+            document.getElementById('read-result').textContent = '';
+            var methods = ['getNetworkId', 'getBalance', 'getUtxos', 'getCollateral',
+                'getUsedAddresses', 'getUnusedAddresses', 'getChangeAddress', 'getRewardAddresses'];
+            // Sequential so the log stays ordered and we exercise the tunnel repeatedly.
+            methods.reduce(function(chain, m) {
+                return chain.then(function() { return callReadMethod(m); });
+            }, Promise.resolve());
+        });
+
         function copyAddress() {
             var text = document.getElementById('address').innerText;
-            navigator.clipboard.writeText(text).then(function() {
+            var done = function() {
                 document.getElementById('button').innerText = 'Copied!';
                 setTimeout(function() {
                     document.getElementById('button').innerText = 'Copy';
                 }, 1000);
-            });
+            };
+            function fallback() {
+                var ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try { document.execCommand('copy'); done(); } catch (e) { /* nothing to do */ }
+                document.body.removeChild(ta);
+            }
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(fallback);
+            } else {
+                fallback();
+            }
         }
     </script>
 </body>

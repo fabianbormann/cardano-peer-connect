@@ -110,3 +110,5 @@ dist
 .tern-port
 
 .claude
+# Superpowers scratch (specs/plans/ledgers) — local only
+docs/superpowers/

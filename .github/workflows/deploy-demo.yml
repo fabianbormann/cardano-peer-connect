@@ -1,0 +1,66 @@
+name: Deploy Demo dApp
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'index.ts'
+      - 'examples/react-dapp/**'
+      - '.github/workflows/deploy-demo.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One in-flight deploy at a time; don't cancel a running one mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🫡 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: 🔨 Build the library (the demo depends on file:../..)
+        run: |
+          npm ci
+          npm run build
+
+      - name: 📦 Build the demo dApp
+        working-directory: examples/react-dapp
+        run: |
+          npm install
+          npm run build
+
+      - name: 🎭 Smoke test (renders + peer id) — gate the deploy
+        working-directory: examples/react-dapp
+        run: |
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: ⬆️ Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: examples/react-dapp/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

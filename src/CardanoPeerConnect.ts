@@ -370,10 +370,21 @@ export default abstract class CardanoPeerConnect {
 
         conn.on('close', () => {
           this.logger.info('WALLET: connection to DApp closed');
+          // Only an UNEXPECTED close (dApp tab closed / network dropped) reaches
+          // here with activeRpc still ours — `disconnect()` nulls activeRpc
+          // before its own close fires, so this never double-reports an
+          // intentional teardown. Notify the consumer (so a wallet UI can drop
+          // the session) and re-arm the discovery peer for a later reconnect.
           if (this.activeRpc === rpc) {
             rpc.destroy();
             this.activeRpc = null;
             this.activeConn = null;
+            this.onDisconnect({
+              dApp: { name: '', url: '', address: this.dappIdentifier ?? '' },
+              connected: false,
+              error: false,
+            });
+            this.setUpDiscoveryPeer();
           }
         });
 
