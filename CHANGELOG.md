@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.21](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.20...v1.2.21) (2026-09-04)
+
+
+### Features
+
+* **examples:** React demo dApp (Evolution SDK self-send + metadata over CIP-45) + GitHub Pages deploy workflow ([37c0ca2](https://github.com/fabianbormann/cardano-peer-connect/commit/37c0ca2fa377c285e7d63e2e7ab2eb55d76a3200))
+* **examples:** use @evolution-sdk/evolution (intersectmbo) instead of lucid-evolution for the demo tx ([21faee5](https://github.com/fabianbormann/cardano-peer-connect/commit/21faee54d2f8d3563e11b161a8efc1de5ad4c5f1))
+* **wallet:** fire onDisconnect on unexpected connection close; test dApp lifecycle log + disconnect button ([e647e26](https://github.com/fabianbormann/cardano-peer-connect/commit/e647e26559a8bb421e79dbc0574ba2759562f09b))
+
+
+### Bug Fixes
+
+* **dapp:** don't reassign window.cardano when another wallet locked it read-only ([558be60](https://github.com/fabianbormann/cardano-peer-connect/commit/558be60ebb2d8ff4b5c595fcbd442c0589070efb))
+* **dapp:** eject local state on shutdownServer so the dApp doesn't stay falsely connected ([b25e8aa](https://github.com/fabianbormann/cardano-peer-connect/commit/b25e8aa80efb2fb4dbbe144dfdfbf79c3d26a81a))
+* **examples:** add viewBox to QR svg so it scales instead of cropping ([6dc426a](https://github.com/fabianbormann/cardano-peer-connect/commit/6dc426a6be6eaa9d89e6f6a3f3e8efd2ed632801))
+
 ## [1.2.20](https://github.com/fabianbormann/cardano-peer-connect/compare/v1.2.19...v1.2.20) (2026-08-31)
 
 
