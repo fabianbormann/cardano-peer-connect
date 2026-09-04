@@ -43,6 +43,12 @@ jobs:
           npm install
           npm run build
 
+      - name: 🎭 Smoke test (renders + peer id) — gate the deploy
+        working-directory: examples/react-dapp
+        run: |
+          npx playwright install --with-deps chromium
+          npm test
+
       - name: ⬆️ Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
