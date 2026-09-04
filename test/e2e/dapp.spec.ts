@@ -229,6 +229,10 @@ test('wallet detects a dApp shutdown and reports Disconnected', async ({ browser
     // it sends a shutdown RPC, which fires the wallet's onServerShutdown.
     await dappPage.locator('#btn-dapp-disconnect').click();
     await expect(walletPage.locator('#connection-status')).toHaveText('Disconnected', { timeout: 15_000 });
+    // The dApp must eject its own state too (it initiated the shutdown), not
+    // stay stuck showing Connected / API Injected.
+    await expect(dappPage.locator('#connection-status')).toHaveText('Disconnected', { timeout: 15_000 });
+    await expect(dappPage.locator('#api-status')).toHaveText('No API', { timeout: 15_000 });
   } finally {
     await dappContext.close();
     await walletContext.close();

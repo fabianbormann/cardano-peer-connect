@@ -502,6 +502,15 @@ export default class DAppPeerConnect {
         dApp: this.dAppInfo,
       };
       this.activeRpc.call('shutdown', status, () => {});
+      // The wallet handles 'shutdown' by tearing down its RPC WITHOUT closing
+      // the WebRTC connection, so the dApp never receives a 'close' event.
+      // Update our own state now (the send above is synchronous): destroy the
+      // RPC and eject the API so onDisconnect/onApiEject fire and any further
+      // CIP-30 call fails fast instead of hanging against a dead RPC.
+      const wallet = this.connectedWallet;
+      this.activeRpc.destroy();
+      this.activeRpc = null;
+      this.leftServer(wallet);
     }
   };
 
