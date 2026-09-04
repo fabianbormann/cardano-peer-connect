@@ -8,9 +8,9 @@
 
 A deployable React demo dApp that connects to a CIP-45 wallet (e.g. GeroWallet)
 over WebRTC, exercises **every** CIP-30 method, and builds/signs/submits a real
-self-send transaction *with metadata* using Evolution SDK (Evolution SDK),
-submitted through the wallet. Published as a static GitHub Pages site from a CI
-pipeline in this repo.
+self-send transaction *with metadata* using Evolution SDK
+(`@evolution-sdk/evolution`, Intersect MBO), submitted through the wallet.
+Published as a static GitHub Pages site from a CI pipeline in this repo.
 
 Non-goals: replacing the plain-HTML e2e test pages (they stay; the e2e suite
 depends on them); automating the on-chain round-trip in CI; supporting more than
@@ -88,24 +88,31 @@ key}` or the error. Reuses the existing hex helper.
 
 `buildSignSubmitSelfSend(api)`:
 
-```ts
-import { Lucid, Blockfrost } from '@evolution-sdk/evolution';
+Authoritative implementation: `src/evolutionTx.ts`. Evolution SDK's Client API
+(not Lucid's) — assemble a client from the Blockfrost-compatible provider + the
+CIP-30 wallet, build a self-send with label-674 metadata, sign, submit:
 
-export async function buildSignSubmitSelfSend(api: any, timestamp: number): Promise<string> {
-  const lucid = await Lucid(new Blockfrost(PROVIDER_URL, PROVIDER_KEY), 'Preprod');
-  lucid.selectWallet.fromAPI(api);                    // wallet = the CIP-45 CIP-30 api
-  const ownAddress = await lucid.wallet().address();  // change address, bech32
-  const tx = await lucid
-    .newTx()
-    .pay.ToAddress(ownAddress, { lovelace: 1_000_000n })   // self-send 1 ADA
-    .attachMetadata(674, {                                   // CIP-20 message label
-      msg: ['CIP-45 demo tx via Evolution SDK', String(timestamp)],
-    })
-    .complete();                                            // Koios params + api.getUtxos
-  const signed = await tx.sign.withWallet().complete();     // api.signTx (wallet approval)
-  const txHash = await signed.submit();                     // api.submitTx (wallet submits)
-  return txHash;
-}
+```ts
+import { Client, preprod, Assets, TransactionHash, TransactionMetadatum }
+  from '@evolution-sdk/evolution';
+
+const read = Client.make(preprod).withBlockfrost({ baseUrl: PROVIDER_URL });
+const client = read.withCip30(api);                 // wallet = the CIP-45 CIP-30 api
+const ownAddress = await client.address();
+const metadata = TransactionMetadatum.fromEntries([[
+  TransactionMetadatum.text('msg'),
+  TransactionMetadatum.array([
+    TransactionMetadatum.text('CIP-45 demo tx via Evolution SDK'),
+    TransactionMetadatum.text(String(timestamp)),
+  ]),
+]]);
+const built = await client.newTx()
+  .payToAddress({ address: ownAddress, assets: Assets.fromLovelace(1_000_000n) })
+  .attachMetadata({ label: 674n, metadata })
+  .build();                                          // provider params + wallet utxos
+const signed = await built.sign();                   // api.signTx (wallet approval)
+const hash = await signed.submit();                  // api.submitTx (wallet submits)
+return TransactionHash.toHex(hash);
 ```
 
 - `timestamp` is passed in (not read from `Date.now()` inside a pure helper) so
