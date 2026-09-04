@@ -18,10 +18,18 @@ one provider or network in v1.
 
 ## Decisions (locked)
 
-- **Network:** Preprod. **Provider:** Koios keyless (`https://preprod.koios.rest/api/v1`)
-  — no API key, safe to ship in a static bundle. Koios supplies protocol
-  parameters + reads for *building*; **submission goes through the wallet's
-  `submitTx`** (via `makeWalletFromAPI`), which is the point of the test.
+- **Network:** Preprod. **Provider:** the keyless Blockfrost-compatible endpoint
+  `https://node0-showcase.yano-x.io/api/v1` (Yaci-Store; preprod, epoch 311 at
+  design time), via Lucid's `Blockfrost` provider with an empty key. Koios was
+  ruled out — its responses carry no `Access-Control-Allow-Origin`, so browsers
+  block it; yano-x had the same gap but its engineer is enabling ACAO. Provider
+  is used only to read protocol parameters for *building*; **submission goes
+  through the wallet's `submitTx`** (via `makeWalletFromAPI`), which is the point
+  of the test. Fallback if yano-x CORS regresses: real Blockfrost with a preprod
+  key injected at build (it sends `ACAO: *`). Base URL is a Vite env var so the
+  provider can be swapped without code changes.
+  - Local dev/testing before yano-x CORS is live: a tiny local ACAO proxy in
+    front of yano-x (documented in the app README), pointed at via the env var.
 - **Coexistence:** new `examples/react-dapp/` sub-project; plain-HTML pages
   under `test/e2e/` unchanged.
 - **Library source:** the app depends on this repo's own library via
@@ -81,10 +89,10 @@ key}` or the error. Reuses the existing hex helper.
 `buildSignSubmitSelfSend(api)`:
 
 ```ts
-import { Lucid, Koios, makeWalletFromAPI } from '@lucid-evolution/lucid';
+import { Lucid, Blockfrost } from '@lucid-evolution/lucid';
 
 export async function buildSignSubmitSelfSend(api: any, timestamp: number): Promise<string> {
-  const lucid = await Lucid(new Koios(KOIOS_URL), 'Preprod');
+  const lucid = await Lucid(new Blockfrost(PROVIDER_URL, PROVIDER_KEY), 'Preprod');
   lucid.selectWallet.fromAPI(api);                    // wallet = the CIP-45 CIP-30 api
   const ownAddress = await lucid.wallet().address();  // change address, bech32
   const tx = await lucid
@@ -112,7 +120,8 @@ export async function buildSignSubmitSelfSend(api: any, timestamp: number): Prom
 
 ```ts
 export const NETWORK = 'Preprod';
-export const KOIOS_URL = import.meta.env.VITE_KOIOS_URL ?? 'https://preprod.koios.rest/api/v1';
+export const PROVIDER_URL = import.meta.env.VITE_PROVIDER_URL ?? 'https://node0-showcase.yano-x.io/api/v1';
+export const PROVIDER_KEY = import.meta.env.VITE_PROVIDER_KEY ?? ''; // yano-x is keyless
 export const PEERJS = {
   host: import.meta.env.VITE_PEERJS_HOST ?? 'peerjs.dev.ecosyseng.cf-deployments.org',
   port: Number(import.meta.env.VITE_PEERJS_PORT ?? 443),
