@@ -39,6 +39,14 @@
     <p>Status: <span id="connection-status" class="disconnected">Disconnected</span></p>
     <p>API: <span id="api-status">No API</span>&nbsp;&nbsp;Wallet: <span id="wallet-address" style="font-family:monospace"></span></p>
 
+    <p>
+        <button id="btn-dapp-disconnect" disabled>Disconnect (shut down)</button>
+    </p>
+
+    <!-- ── Lifecycle Events ───────────────────────────────────── -->
+    <h2>Lifecycle Events</h2>
+    <ul id="lifecycle-log" style="list-style:none; padding:6px; margin:0; border:1px solid #ddd; font-family:monospace; font-size:0.8rem; max-height:180px; overflow:auto;"></ul>
+
     <!-- ── Get Network ID ─────────────────────────────────────── -->
     <h2>Get Network ID</h2>
     <button id="btn-get-network-id" disabled>Get Network ID</button>
@@ -106,9 +114,17 @@
             document.getElementById('btn-sign-data').disabled = !enabled;
             document.getElementById('btn-get-collateral').disabled = !enabled;
             document.getElementById('btn-run-all-reads').disabled = !enabled;
+            document.getElementById('btn-dapp-disconnect').disabled = !enabled;
             Array.prototype.forEach.call(document.querySelectorAll('.read-btn'), function(b) {
                 b.disabled = !enabled;
             });
+        }
+
+        function logLifecycle(msg) {
+            var ul = document.getElementById('lifecycle-log');
+            var li = document.createElement('li');
+            li.textContent = new Date().toLocaleTimeString() + '  ' + msg;
+            ul.insertBefore(li, ul.firstChild);
         }
 
         var dAppConnect = new CardanoPeerConnect.DAppPeerConnect({
@@ -124,11 +140,13 @@
             },
             signingTimeoutMs: Number(localStorage.getItem('test-signing-timeout-ms')) || undefined,
             onConnect: function(address, walletInfo) {
+                logLifecycle('onConnect: ' + address);
                 document.getElementById('connection-status').innerText = 'Connected';
                 document.getElementById('connection-status').className = 'connected';
                 document.getElementById('wallet-address').innerText = address;
             },
             onDisconnect: function(address) {
+                logLifecycle('onDisconnect: ' + address);
                 document.getElementById('connection-status').innerText = 'Disconnected';
                 document.getElementById('connection-status').className = 'disconnected';
                 document.getElementById('api-status').innerText = 'No API';
@@ -137,9 +155,13 @@
                 injectedApi = null;
             },
             onApiInject: function(name, address) {
+                logLifecycle('onApiInject: ' + name);
                 document.getElementById('api-status').innerText = 'API Injected';
                 injectedApi = window.cardano[name.toLowerCase()];
                 setActionsEnabled(true);
+            },
+            onApiEject: function(name, address) {
+                logLifecycle('onApiEject: ' + name);
             }
         });
 
@@ -192,6 +214,17 @@
                 document.getElementById('sign-error').innerText = 'REJECTED: ' + JSON.stringify(e);
                 document.getElementById('sign-error').style.display = 'block';
             });
+        });
+
+        document.getElementById('btn-dapp-disconnect').addEventListener('click', function() {
+            logLifecycle('dApp: shutdownServer() — notifying wallet');
+            dAppConnect.shutdownServer();
+        });
+
+        // Notify the wallet on tab close so it can drop the session promptly,
+        // instead of relying on the WebRTC close/ICE timeout.
+        window.addEventListener('beforeunload', function() {
+            try { dAppConnect.shutdownServer(); } catch (e) { /* nothing to do */ }
         });
 
         function appendReadLine(line) {
