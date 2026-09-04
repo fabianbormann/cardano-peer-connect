@@ -82,6 +82,18 @@ export function useCip45() {
     setState((s) => ({ ...s, peerId }));
     if (qrRef.current) {
       dAppConnect.generateQRCode(qrRef.current);
+      // qrcode-svg emits a fixed-size SVG (width/height in px) with no viewBox,
+      // so CSS scaling crops it instead of resizing. Add a viewBox from its
+      // intrinsic size and make it fluid so it fits the container.
+      const svg = qrRef.current.querySelector('svg');
+      if (svg) {
+        const w = svg.getAttribute('width') ?? '256';
+        const h = svg.getAttribute('height') ?? '256';
+        svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+        svg.setAttribute('width', '100%');
+        svg.setAttribute('height', '100%');
+        svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      }
     }
 
     const onUnload = () => {
