@@ -8,7 +8,7 @@
 
 A deployable React demo dApp that connects to a CIP-45 wallet (e.g. GeroWallet)
 over WebRTC, exercises **every** CIP-30 method, and builds/signs/submits a real
-self-send transaction *with metadata* using Evolution SDK (Lucid Evolution),
+self-send transaction *with metadata* using Evolution SDK (Evolution SDK),
 submitted through the wallet. Published as a static GitHub Pages site from a CI
 pipeline in this repo.
 
@@ -42,7 +42,7 @@ one provider or network in v1.
 
 ```
 examples/react-dapp/
-  package.json          # react, react-dom, @lucid-evolution/lucid,
+  package.json          # react, react-dom, @evolution-sdk/evolution,
                         # file:../.. for the peer-connect lib; vite + ts devdeps
   vite.config.ts        # base: '/cardano-peer-connect/', wasm/top-level-await plugins
   tsconfig.json
@@ -51,7 +51,7 @@ examples/react-dapp/
     main.tsx            # React root
     App.tsx             # top-level: owns the DAppPeerConnect instance + UI state
     peer.ts             # creates DAppPeerConnect, exposes connect state + injected api
-    lucidTx.ts          # buildSignSubmitSelfSend(api): the Evolution SDK flow
+    evolutionTx.ts          # buildSignSubmitSelfSend(api): the Evolution SDK flow
     config.ts           # network, koios url, signaling config from import.meta.env
     components/
       ConnectionPanel.tsx  # QR + peer id + copy + lifecycle log
@@ -84,12 +84,12 @@ One button per method — `getNetworkId`, `getBalance`, `getUtxos`,
 Address + message inputs; `api.signData(addr, hex(msg))`; render `{signature,
 key}` or the error. Reuses the existing hex helper.
 
-### Transaction (lucidTx.ts / TxPanel)
+### Transaction (evolutionTx.ts / TxPanel)
 
 `buildSignSubmitSelfSend(api)`:
 
 ```ts
-import { Lucid, Blockfrost } from '@lucid-evolution/lucid';
+import { Lucid, Blockfrost } from '@evolution-sdk/evolution';
 
 export async function buildSignSubmitSelfSend(api: any, timestamp: number): Promise<string> {
   const lucid = await Lucid(new Blockfrost(PROVIDER_URL, PROVIDER_KEY), 'Preprod');
@@ -132,7 +132,7 @@ export const PEERJS = {
 
 ## Bundling notes
 
-- Lucid Evolution pulls WASM (CML) and uses top-level await, so `vite.config.ts`
+- Evolution SDK pulls WASM (CML) and uses top-level await, so `vite.config.ts`
   needs `vite-plugin-wasm` + `vite-plugin-top-level-await`, and
   `build.target: 'es2022'` (or esnext). `optimizeDeps.esbuildOptions.target`
   set accordingly.

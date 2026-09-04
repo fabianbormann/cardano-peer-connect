@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import type { Cip30Api } from '../peer';
-import type { WalletApi } from '@lucid-evolution/lucid';
-import { buildSignSubmitSelfSend } from '../lucidTx';
+import { buildSignSubmitSelfSend } from '../evolutionTx';
 import { explorerTxUrl } from '../config';
 
 interface Props {
@@ -19,8 +18,7 @@ export function TxPanel({ api, disabled }: Props) {
     setStatus({ kind: 'pending' });
     try {
       const enabled = await api.enable();
-      // Lucid expects a CIP-30 WalletApi; the injected object is exactly that.
-      const hash = await buildSignSubmitSelfSend(enabled as unknown as WalletApi, Date.now());
+      const hash = await buildSignSubmitSelfSend(enabled, Date.now());
       setStatus({ kind: 'done', hash });
     } catch (e) {
       const message = e instanceof Error ? e.message : JSON.stringify(e);

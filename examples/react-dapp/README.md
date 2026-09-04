@@ -3,7 +3,7 @@
 A deployable demo dApp that connects to a CIP-45 wallet (e.g. GeroWallet) over
 WebRTC, exercises every CIP-30 method, and builds/signs/**submits** a real
 self-send transaction with metadata on **Preprod** using
-[Evolution SDK](https://github.com/anastasia-labs/lucid-evolution). Submission
+[Evolution SDK](https://github.com/intersectmbo/evolution-sdk). Submission
 goes through the wallet's `submitTx`; the provider (a keyless Blockfrost-compatible
 endpoint) is used only to read protocol parameters while building.
 

@@ -1,7 +1,3 @@
-import type { Network } from '@lucid-evolution/lucid';
-
-export const NETWORK: Network = 'Preprod';
-
 // Keyless Blockfrost-compatible endpoint (Yaci-Store). Overridable so the
 // provider can be swapped (e.g. a local ACAO proxy during dev, or real
 // Blockfrost) without code changes.

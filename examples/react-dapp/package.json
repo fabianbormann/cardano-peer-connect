@@ -10,8 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@evolution-sdk/evolution": "^0.5.13",
     "@fabianbormann/cardano-peer-connect": "file:../..",
-    "@lucid-evolution/lucid": "^0.4.29",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
