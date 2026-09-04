@@ -43,51 +43,46 @@ export function ConnectionPanel({ qrRef, state, onDisconnect }: Props) {
   const connected = state.status === 'connected';
 
   return (
-    <section style={{ borderTop: '1px solid #ddd', paddingTop: '1rem' }}>
-      <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <div ref={qrRef} style={{ width: 180, height: 180 }} />
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <p style={{ margin: '0 0 4px' }}>Peer ID (share with wallet):</p>
-          <p style={{ fontFamily: 'monospace', margin: '0 0 8px', wordBreak: 'break-all' }}>
-            {state.peerId || '…'}
-          </p>
-          <button onClick={copy}>{copied ? 'Copied!' : 'Copy'}</button>{' '}
-          {connected && <button onClick={onDisconnect}>Disconnect (shut down)</button>}
-          <p style={{ marginTop: 12 }}>
-            Status:{' '}
-            <strong style={{ color: connected ? 'green' : '#c00' }}>
-              {connected ? 'Connected' : 'Disconnected'}
-            </strong>
-          </p>
-          <p style={{ margin: 0 }}>
-            API: <strong>{state.apiName ? 'Injected' : 'No API'}</strong>
-            {state.walletAddress && (
-              <>
-                {' '}
-                Wallet:{' '}
-                <span style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}>
-                  {state.walletAddress}
-                </span>
-              </>
+    <section className="card">
+      <div className="conn">
+        <div className="qr" ref={qrRef} />
+        <div className="conn-details">
+          <p className="field-label">Peer ID (share with wallet)</p>
+          <code className="peerid">{state.peerId || '…'}</code>
+          <div className="btn-row">
+            <button className="btn secondary" onClick={copy}>
+              {copied ? 'Copied!' : 'Copy'}
+            </button>
+            {connected && (
+              <button className="btn secondary" onClick={onDisconnect}>
+                Disconnect
+              </button>
             )}
-          </p>
+          </div>
+          <div className="meta-row">
+            <span className={`badge ${connected ? 'ok' : 'off'}`}>
+              {connected ? 'Connected' : 'Disconnected'}
+            </span>
+            <span className={`badge ${state.apiName ? 'ok' : 'off'}`}>
+              {state.apiName ? 'API injected' : 'No API'}
+            </span>
+          </div>
+          {state.walletAddress && (
+            <div className="meta-row">
+              <span className="field-label" style={{ margin: 0 }}>
+                Wallet
+              </span>
+              <span className="wallet-addr">{state.walletAddress}</span>
+            </div>
+          )}
         </div>
       </div>
 
-      <h3 style={{ marginBottom: 4 }}>Lifecycle Events</h3>
-      <ul
-        style={{
-          listStyle: 'none',
-          padding: 6,
-          margin: 0,
-          border: '1px solid #ddd',
-          fontFamily: 'monospace',
-          fontSize: '0.8rem',
-          maxHeight: 160,
-          overflow: 'auto',
-        }}
-      >
-        {state.lifecycle.length === 0 && <li style={{ color: '#999' }}>waiting for a wallet…</li>}
+      <p className="field-label" style={{ marginTop: 20 }}>
+        Lifecycle Events
+      </p>
+      <ul className="log">
+        {state.lifecycle.length === 0 && <li className="empty">waiting for a wallet…</li>}
         {state.lifecycle.map((e, i) => (
           <li key={i}>
             {e.time} {e.message}

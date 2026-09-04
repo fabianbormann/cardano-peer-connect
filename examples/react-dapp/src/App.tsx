@@ -10,16 +10,9 @@ export function App() {
   const hasApi = !!state.api;
 
   return (
-    <main
-      style={{
-        maxWidth: 720,
-        margin: '2rem auto',
-        padding: '0 1rem',
-        fontFamily: 'system-ui, sans-serif',
-      }}
-    >
-      <h1>CIP-45 Demo dApp</h1>
-      <p style={{ color: '#555' }}>
+    <main className="app">
+      <h1 className="title">CIP-45 Demo dApp</h1>
+      <p className="subtitle">
         Peer-to-peer wallet connection over WebRTC, exercising the full CIP-30 API and a real
         self-send transaction with metadata built via Evolution SDK (Preprod).
       </p>

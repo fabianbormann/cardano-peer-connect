@@ -35,42 +35,28 @@ export function SignDataPanel({ api, disabled }: Props) {
     }
   };
 
+  const isError = result.startsWith('✗');
+
   return (
-    <section style={{ borderTop: '1px solid #ddd', paddingTop: '1rem', marginTop: '1rem' }}>
+    <section className="card">
       <h2>Sign Data</h2>
-      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600 }}>
-        Address (blank → change address, hex)
-      </label>
+      <label className="form-label">Address (blank → change address, hex)</label>
       <input
-        style={{ width: '100%', fontFamily: 'monospace', padding: '4px 6px', marginBottom: 8 }}
+        className="input mono"
         value={addr}
         onChange={(e) => setAddr(e.target.value)}
         placeholder="leave blank to use the wallet's change address"
       />
-      <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600 }}>Message</label>
+      <label className="form-label">Message</label>
       <input
-        style={{ width: '100%', padding: '4px 6px', marginBottom: 8 }}
+        className="input"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
       />
-      <button disabled={disabled} onClick={signData}>
+      <button className="btn" disabled={disabled} onClick={signData}>
         Sign Data
       </button>
-      {result && (
-        <pre
-          style={{
-            background: '#f5f5f5',
-            border: '1px solid #ddd',
-            padding: 8,
-            marginTop: 8,
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            fontSize: '0.8rem',
-          }}
-        >
-          {result}
-        </pre>
-      )}
+      {result && <pre className={`console${isError ? ' error' : ''}`}>{result}</pre>}
     </section>
   );
 }

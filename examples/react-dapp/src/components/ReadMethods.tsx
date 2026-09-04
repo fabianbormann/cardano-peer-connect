@@ -43,12 +43,13 @@ export function ReadMethods({ api, disabled }: Props) {
   };
 
   return (
-    <section style={{ borderTop: '1px solid #ddd', paddingTop: '1rem', marginTop: '1rem' }}>
+    <section className="card">
       <h2>CIP-30 Read Methods</h2>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="btn-row">
         {READ_METHODS.map((m) => (
           <button
             key={m}
+            className="btn secondary"
             disabled={disabled}
             onClick={() => {
               setLog([]);
@@ -58,27 +59,11 @@ export function ReadMethods({ api, disabled }: Props) {
             {m}
           </button>
         ))}
-        <button disabled={disabled} onClick={runAll}>
+        <button className="btn" disabled={disabled} onClick={runAll}>
           Run all
         </button>
       </div>
-      {log.length > 0 && (
-        <pre
-          style={{
-            background: '#f5f5f5',
-            border: '1px solid #ddd',
-            padding: 8,
-            marginTop: 8,
-            maxHeight: 240,
-            overflow: 'auto',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            fontSize: '0.8rem',
-          }}
-        >
-          {log.join('\n')}
-        </pre>
-      )}
+      {log.length > 0 && <pre className="console">{log.join('\n')}</pre>}
     </section>
   );
 }
