@@ -40,6 +40,11 @@ jobs:
       - name: 📦 Build the demo dApp
         working-directory: examples/react-dapp
         run: |
+          # No committed lockfile (npm's optional-deps bug skips the platform
+          # Rollup binary when a lock generated on another OS — e.g. macOS — is
+          # present on Linux CI). Remove any stray lock so npm resolves the
+          # correct optionals for this OS.
+          rm -f package-lock.json
           npm install
           npm run build
 
